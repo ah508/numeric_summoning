@@ -2,23 +2,30 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import json
 
-url = "https://dragalialost.gamepedia.com/Adventurer_List"
-html = urlopen(url)
-data = BeautifulSoup(html, "html5lib")
+adv_url = "https://dragalialost.gamepedia.com/Adventurer_List"
+drag_url = "https://dragalialost.gamepedia.com/Dragon_List"
+adv_html = urlopen(adv_url)
+adv_data = BeautifulSoup(adv_html, "html5lib")
+drag_html = urlopen(drag_url)
+drag_data = BeautifulSoup(drag_html, "html5lib")
 
-pool = {}
+adventurer = {}
+dragon = {}
 for category in ['All', 'Permanent', 'Seasonal', 'Gala', 'Zodiac', 'Collab']:
-    pool[category] = {}
+    adventurer[category] = {}
+    dragon[category] = {}
 
 for rarity in ['5', '4', '3']:
-    pool['All'][rarity] = len(data.find_all("tr", attrs={"data-rarity" : rarity}))
+    adventurer['All'][rarity] = len(adv_data.find_all("tr", attrs={"data-rarity" : rarity}))
+    dragon['All'][rarity] = len(drag_data.find_all("tr", attrs={"data-rarity" : rarity}))
     for subpool in ['Permanent', 'Seasonal', 'Gala', 'Zodiac', 'Collab']:
-        pool[subpool][rarity] = len(data.find_all("tr", attrs={'data-availability' :  subpool, 'data-rarity' : rarity}))
+        adventurer[subpool][rarity] = len(adv_data.find_all("tr", attrs={'data-availability' :  subpool, 'data-rarity' : rarity}))
+        dragon[subpool][rarity] = len(drag_data.find_all("tr", attrs={'data-availability' :  subpool, 'data-rarity' : rarity}))
 
-with open("pools.json", "r+", encoding="utf8") as f:
-    f.read()
-    f.seek(0)
-    f.truncate()
+pool = {
+    'dragon' : dragon,
+    'adventurer' : adventurer
+    }
 
-with open("pools.json", "w") as f:
-    json.dump(pool, f)
+with open("pools.json", "w+", encoding="utf8") as f:
+    json.dump(pool, f)    
