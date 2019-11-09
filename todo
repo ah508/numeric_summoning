@@ -1,2 +1,3 @@
 add conversions to decimal for accuracy
 make the matrices sparse
+replace that horrid recursive conditioning with a markov chain

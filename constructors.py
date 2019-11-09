@@ -1,7 +1,9 @@
 import numpy as np
 import itertools
-# import math
+import decimal
+from decimal import Decimal
 import pprint
+import time
 
 class BlockGenerator:
     def __init__(self, wants):
@@ -14,13 +16,6 @@ class BlockGenerator:
         for i in range(0, len(self.universe)):
             for j in itertools.combinations(self.universe, i):
                 self.indices.append(frozenset(j))
-        # print(self.indices)
-        # print(self.universe)
-        # if len(self.universe) <= 1:
-        #     self.fullsize = self.universe
-        # else:
-        #     self.fullsize = frozenset(itertools.combinations(self.universe, len(self.universe)))
-        #     print(self.fullsize)
         
         self.bloc_struc = np.array([])
         self.end_col = np.array([])
@@ -34,10 +29,6 @@ class BlockGenerator:
                 gain = horizontal - vertical
                 if vertical == horizontal:
                     block = self.comp_block(need)
-                    # block -= final
-                    # for prehandled in gained_list.keys():
-                    #     if prehandled > horizontal:
-                    #         block -= gained_list[prehandled]
                 elif horizontal > vertical:
                     block = self.blockmap[gain]
                     block -= final
@@ -156,7 +147,7 @@ class BlockGenerator:
                     for i in range(0, len(p_vec_alt)):
                         new_n = n_vec_alt[:i] + [0] + n_vec_alt[i+1:]
                         ## ERROR HERE
-                        if i <= len(p_vec):
+                        if i < len(p_vec):
                             p_get += self.wants[order[i]]['alt prob']*self.recursive_p(p_vec_alt, new_n, sum(new_n), pull_size=9)
                         else:
                             p_get += p_vec_alt[-1]*self.recursive_p(p_vec_alt, new_n, sum(new_n), pull_size=9)
@@ -213,6 +204,13 @@ class BlockGenerator:
             print(sum(self.megablock[i]))
             # if sum(self.bloc_struc[i]) != 1:
             #     print(f'error on row {i} : sums to {sum(self.bloc_struc[i])}')
+    def hitting_time(self):
+        iden = np.eye(len(self.bloc_struc))
+        subt = iden - self.bloc_struc
+        final = np.linalg.inv(subt)
+        print(final[0])
+        t = sum(final[0])
+        print(t)
         
     
 grundlespite = {
@@ -224,23 +222,30 @@ grundlespite = {
         'alt inc' : .000639,
         'rarity' : 5
         },
-    'Hastur' : {
-        'base prob' : .008,
-        'alt prob' : .008,
-        'spec prob' : .2,
-        'prob inc' : .0010222,
-        'alt inc' : .0010222,
-        'rarity' : 5
-
+    'WXania' : {
+        'base prob' : .02333,
+        'alt prob' : .14001,
+        'spec prob' : 0,
+        'prob inc' : 0,
+        'alt inc' : -.00073,
+        'rarity' : 4
         }
     }
 
+s_time = time.process_time()
+
 test = BlockGenerator(grundlespite)
-test.test_pt_matrix()
-np.set_printoptions(precision=3)
+print('generated:')
+print(time.process_time() - s_time)
+# test.test_pt_matrix()
+# np.set_printoptions(precision=3)
 # printer = pprint.PrettyPrinter()
 # printer.pprint(test.endmap)
 # print(test.universe)
 # print(test.fullsize)
-print(test.bloc_struc)
-print(test.end_col)
+# print(test.bloc_struc)
+# print(test.end_col)
+test.hitting_time()
+print('inverted:')
+print(time.process_time() - s_time)
+
