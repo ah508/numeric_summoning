@@ -9,227 +9,183 @@ decimal.getcontext()
 class BlockGenerator:
     def __init__(self, wants):
         self.wants = wants
-        # print(wants.keys())
         self.universe = frozenset(wants.keys())
         self.indices = []
         self.blockmap = {}
-        self.endmap = {}
+        self.checkvec = []
         for i in range(0, len(self.universe)):
             for j in itertools.combinations(self.universe, i):
                 self.indices.append(frozenset(j))
-
-        self.bloc_struc = np.array([])
-        self.end_col = np.array([])
-        self.precomp_blocks()
+        
+    def construct_block(self):
+        self.create_chains()
+        self.find_p()
+        self.block_struc = np.array([])
         for vertical in self.indices:
             horz = np.array([])
-            need = self.universe - vertical
-            gained_list = {}
-            final = self.endmap[need]
-            final = self.blockmap[need]
             for horizontal in reversed(self.indices):
-                gain = horizontal - vertical
-                if vertical == horizontal:
-                    block = self.comp_block(need)
-                elif horizontal > vertical:
-                    block = self.blockmap[gain]
-                    block -= final
-                    for prehandled in gained_list.keys():
-                        if prehandled > horizontal:
-                            block -= gained_list[prehandled]
-                    gained_list[horizontal] = block
-                else:
-                    block = self.blockmap[frozenset()]
-                # if vertical == frozenset():
-                #     print(block)
+                block = self.get_block(horizontal, vertical)
                 try:
                     horz = np.hstack((block, horz))
                 except ValueError:
                     horz = block
             try:
-                self.bloc_struc = np.vstack((self.bloc_struc, horz))
+                self.block_struc = np.vstack((self.block_struc, horz))
             except ValueError: 
-                self.bloc_struc = horz
-            try:
-                self.end_col = np.vstack((self.end_col, final))
-            except ValueError:
-                self.end_col = final
-        self.megablock = np.hstack((self.bloc_struc, self.end_col))
-    
-    def comp_block(self, need):
-        block = np.zeros([12,12]) #placeholder
-        for pity in range(0, len(block)):
-            p_break, p_diag = self.find_p(need, pity, get=False)
-            if pity < len(block) - 1:
-                block[pity][pity+1] = p_diag
-                block[pity][0] = p_break
-            else:
-                block[pity][0] = p_break + p_diag
+                self.block_struc = horz
+            for i in range(0, 12):
+                self.checkvec.append(self.tenpull[i][self.chain_indices.index(vertical)][self.chain_indices.index(self.universe | frozenset('5'))]
+                                    + self.tenpull[i][self.chain_indices.index(vertical)][self.chain_indices.index(self.universe)])
+        self.absorption_p, absorption_s = self.get_end()
+        self.full_struc = np.hstack((self.block_struc, self.absorption_p))
+        self.full_struc = np.vstack((self.full_struc, absorption_s))
+
+    def create_chains(self):
+        state_set = self.universe | frozenset('5')
+        self.chain_indices = []
+        for i in range(0, len(state_set)):
+            for j in itertools.combinations(state_set, i):
+                self.chain_indices.append(frozenset(j))
+        self.chain_indices.append(state_set)
+        c_ref = self.chain_indices
+        self.n_chain_db = {}
+        self.a_chain_db = {}
+        for pity in range(0, 12):# placeholder
+            n_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)], dtype=np.dtype(Dec))
+            a_chain = np.copy(n_chain)
+            for vertical in self.chain_indices:
+                available = state_set - vertical
+                rate_5 = Dec('.04') + pity*Dec('.005')
+                n_rate_none = 1
+                a_rate_none = 1
+                for unit in available:
+                    try:
+                        if self.wants[unit]['rarity'] == 5:
+                            rate_5 -= self.wants[unit]['base prob'] + pity*self.wants[unit]['prob inc']
+                    except KeyError:
+                        pass
+                for horizontal in reversed(self.chain_indices):
+                    acquisition = horizontal - vertical
+                    if len(acquisition) > 1:
+                        pass
+                    elif horizontal == vertical:
+                        n_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = n_rate_none
+                        a_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = a_rate_none
+                    elif acquisition == frozenset():
+                        pass
+                    elif acquisition <= available and len(horizontal) == len(vertical) + 1:
+                        attained = next(iter(acquisition))
+                        if attained == '5':
+                            n_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate_5
+                            a_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate_5
+                            n_rate_none -= rate_5
+                            a_rate_none -= rate_5
+                        elif self.wants[attained]['rarity'] == 5:
+                            # h_shift = horizontal | frozenset('5')
+                            rate = self.wants[attained]['base prob'] + pity*self.wants[attained]['prob inc']
+                            n_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate
+                            a_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate
+                            n_rate_none -= rate
+                            a_rate_none -= rate
+                        else:
+                            rate = self.wants[attained]['base prob'] + pity*self.wants[attained]['prob inc']
+                            a_rate = self.wants[attained]['alt prob'] + pity*self.wants[attained]['alt inc']
+                            n_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate
+                            a_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = a_rate
+                            n_rate_none -= rate
+                            a_rate_none -= a_rate
+            self.n_chain_db[pity] = n_chain
+            self.a_chain_db[pity] = a_chain
+        self.s_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)], dtype=np.dtype(Dec))
+        for vertical in self.chain_indices:
+            available = state_set - vertical
+            s_rate_5 = 1
+            s_rate_none = 1
+            for unit in available:
+                try:
+                    if self.wants[unit]['rarity'] == 5:
+                        s_rate_5 -= self.wants[unit]['spec prob']
+                except KeyError:
+                    pass
+            for horizontal in reversed(self.chain_indices):
+                acquisition = horizontal - vertical
+                if len(acquisition) > 1:
+                    pass
+                elif horizontal == vertical:
+                    self.s_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = s_rate_none
+                elif acquisition == frozenset():
+                    pass
+                elif acquisition <= available and len(horizontal) == len(vertical) + 1:
+                    attained = next(iter(acquisition))
+                    if attained == '5':
+                        self.s_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = s_rate_5
+                        s_rate_none -= s_rate_5
+                    elif self.wants[attained]['rarity'] == 5:
+                        # h_shift = horizontal | frozenset('5')
+                        self.s_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = self.wants[attained]['spec prob']
+                        s_rate_none -= self.wants[attained]['spec prob']
+
+    def find_p(self):
+        self.tenpull = {}
+        for pity in range(0, 12):
+            self.tenpull[pity] = self.sim_tenpull(pity)
+
+    def sim_tenpull(self, pity):
+        if pity == 11:
+            first = self.s_chain
+            mid = np.linalg.matrix_power(self.n_chain_db[0], 8)
+            end = self.a_chain_db[0]
+        else:
+            first = self.n_chain_db[pity]
+            mid = np.linalg.matrix_power(self.n_chain_db[pity], 8)
+            end = self.a_chain_db[pity]
+        return np.linalg.multi_dot([first, mid, end])
+
+    def get_block(self, horizontal, vertical):
+        block = np.zeros([12, 12]) #placeholder
+        gained = horizontal - vertical
+        flag_5 = False
+        for unit in gained:
+            if self.wants[unit]['rarity'] == 5:
+                flag_5 = True
+        vert_index = self.chain_indices.index(vertical)
+        horz_non_index = self.chain_indices.index(horizontal)
+        horz_5_index = self.chain_indices.index(horizontal | frozenset('5'))
+        for pity in range(0, 12):
+            if flag_5:
+                block[pity][0] = (self.tenpull[pity][vert_index][horz_5_index] 
+                                + self.tenpull[pity][vert_index][horz_non_index])
+            elif pity < 11:
+                block[pity][0] = self.tenpull[pity][vert_index][horz_5_index]
+                block[pity][pity + 1] = self.tenpull[pity][vert_index][horz_non_index]
+            elif pity == 11:
+                block[pity][0] = self.tenpull[pity][vert_index][horz_5_index]
         return block
 
-    def precomp_blocks(self):
-        for index in (self.indices + [self.universe]):
-            sub_block = np.zeros([12, 12]) #placeholder
-            end_block = np.zeros([12, 12]) #alsoplaceholder
-            if index != frozenset():
-                for pity in range(0, len(sub_block)):
-                    p_break, p_diag = self.find_p(index, pity)
-                    if pity < len(sub_block) - 1:
-                        sub_block[pity][pity+1] = p_diag
-                        sub_block[pity][0] = p_break
-                        end_block[pity][pity+1] = p_diag
-                        end_block[pity][0] = p_break
-                    else:
-                        sub_block[pity][0] = p_break
-                        end_block[pity][0] = p_break 
-            self.blockmap[index] = sub_block
-            self.endmap[index] = end_block
-
-    def find_p(self, acquired, pity_level, get=True): # good god is this ugly. replace with markov chains or something.
-        if not get:
-            p_norm = 1
-            p_alt = 1
-            p_5_correct = []
-            if pity_level < 11:
-                for unit in acquired:
-                    p_norm -= (self.wants[unit]['base prob'] + pity_level*self.wants[unit]['prob inc'])
-                    p_alt -= (self.wants[unit]['alt prob'] + pity_level*self.wants[unit]['alt inc'])
-                    if self.wants[unit]['rarity'] == 5:
-                        p_5_correct.append((self.wants[unit]['base prob'] + pity_level*self.wants[unit]['prob inc']))
-                p_forced = p_norm
-                p_diag = (p_norm - ((Dec('.04') + pity_level*Dec('.005')) - sum(p_5_correct)))**9
-                p_diag *= (p_alt - ((Dec('.04') + pity_level*Dec('.005')) - sum(p_5_correct)))
-                #placeholder vals
-            else:
-                p_forced = 1
-                for unit in acquired:
-                    p_norm -= self.wants[unit]['base prob']
-                    p_alt -= self.wants[unit]['alt prob']
-                    p_forced -= self.wants[unit]['spec prob']
-                p_diag = 0
-            p_noget = p_forced*(p_norm**8)*p_alt
-            p_break = p_noget - p_diag
-            return p_break, p_diag
-        
-        else:
-            p_diag = 0
-            p_break = 0
-            p_vec = []
-            n_vec = []
-            spec_vec = []
-            order = []
-            no_p = Dec('1')
-            no_p_alt = Dec('1')
-            flag_5 = False
-            for unit in acquired:
-                order.append(unit)
-                p_vec.append(self.wants[unit]['base prob'])
-                n_vec.append(Dec('1'))
-                spec_vec.append(self.wants[unit]['prob inc'])
-                no_p -= self.wants[unit]['spec prob']
-                no_p_alt -= self.wants[unit]['alt prob']
-            if pity_level < 11:
-                spec_vec = [x*pity_level for x in spec_vec]
-                p_vec = [sum(n) for n in zip(p_vec, spec_vec)]
-                for unit in acquired:
-                    no_p_alt -= pity_level*self.wants[unit]['alt inc']
-                    if self.wants[unit]['rarity'] == 5:
-                        flag_5 = True
-                for i in range(0, len(p_vec)):
-                    new_n = n_vec[:i] + [0] + n_vec[i+1:]
-                    p_break += (self.wants[order[i]]['alt prob'] + pity_level*self.wants[order[i]]['alt inc'])*self.recursive_p(p_vec, new_n, sum(new_n), pull_size=9)
-                p_break += no_p_alt*self.recursive_p(p_vec, n_vec, sum(n_vec), pull_size=9)
-                if flag_5:
-                    return p_break, p_diag
-                else:
-                    p_get = 0
-                    p_vec_alt = p_vec + [Dec('.04') + pity_level*Dec('.005')]
-                    n_vec_alt = n_vec + [1]
-                    for i in range(0, len(p_vec_alt)):
-                        new_n = n_vec_alt[:i] + [0] + n_vec_alt[i+1:]
-                        if i < len(p_vec):
-                            p_get += (self.wants[order[i]]['alt prob'] + pity_level*self.wants[order[i]]['alt inc'])*self.recursive_p(p_vec_alt, new_n, sum(new_n), pull_size=9)
-                        else:
-                            p_get += p_vec_alt[-1]*self.recursive_p(p_vec_alt, new_n, sum(new_n), pull_size=9)
-                    p_get += no_p_alt*self.recursive_p(p_vec_alt, n_vec_alt, sum(n_vec_alt), pull_size=9)
-                    p_diag = p_break - p_get
-                    return p_get, p_diag
-                    
-            else:
-                for i in range(0, len(p_vec)):
-                    new_n = n_vec[:i] + [0] + n_vec[i+1:]
-                    for j in range(0, len(p_vec)):
-                        new_n_alt = new_n[:j] + [0] + new_n[j+1:]
-                        p_break += self.wants[order[i]]['spec prob']*self.wants[order[j]]['alt prob']*self.recursive_p(p_vec, new_n_alt, sum(new_n_alt), pull_size=8)
-                    p_break += self.wants[order[i]]['spec prob']*no_p_alt*self.recursive_p(p_vec, new_n, sum(new_n), pull_size=8)
-                for k in range(0, len(p_vec)):   
-                    new_n_fin = n_vec[:k] + [0] + n_vec[k+1:]
-                    p_break += no_p*self.wants[order[k]]['alt prob']*self.recursive_p(p_vec, new_n_fin, sum(new_n_fin), pull_size=8)
-                p_break += no_p*no_p_alt*self.recursive_p(p_vec, n_vec, sum(n_vec), pull_size=8)
-                return p_break, p_diag
-    
-
-    def choose(self, n, r):
-        f = self.factorial
-        return f(n)//f(r)//f(n-r)
-
-    def multinom(self, n, m):
-        if m >= sum(n):
-            n += [m - sum(n)]
-            denom = 1
-            num = self.factorial(m)
-            for i in range(0, len(n)):
-                denom *= self.factorial(n[i])
-            return num//denom
-        else:
-            print('multinomial size error')
-            exit()
-
-    def factorial(self, n):
-        if n == 0:
-            return 1
-        elif n > 0:
-            return n*self.factorial(n-1)
-        else:
-            print('Something Broke')
-            exit()
-
-    def recursive_p(self, p, n, m, pull_size=10):
-        if m == pull_size:
-            _p = 1
-            for i in range(0, len(p)):
-                _p *= p[i]**n[i]
-            return _p*self.choose(pull_size, m)
-            # return _p*self.multinom(n + [pull_size - m], pull_size)
-        else:
-            _p = 1
-            for i in range(0, len(p)):
-                _p *= p[i]**n[i]
-            end_p = _p*self.choose(pull_size, m)*(1-sum(p))**(pull_size-m)
-            # end_p = _p*self.multinom(n + [pull_size - m], pull_size)
-            for i in range(0, len(p)):
-                new_n = n[:i] + [n[i]+1] + n[i+1:]
-                end_p += self.recursive_p(p, new_n, m+1, pull_size=pull_size)
-            return end_p
+    def get_end(self):
+        absorption_p = np.zeros([len(self.block_struc), 1])
+        absorption_s = np.zeros([1, len(self.block_struc) + 1])
+        absorption_s[0][-1] = 1
+        for row in range(0, len(self.block_struc)):
+            absorption_p[row] = 1 - sum(self.block_struc[row])
+        return absorption_p, absorption_s
 
     def test_pt_matrix(self):
-        # for i in range(0, len(self.bloc_struc)):
-        #     print(sum(self.bloc_struc[i]))
-        # print('-----')
-        # for i in range(0, len(self.bloc_struc)):
-        #     print(sum(self.end_col[i]))
-        # print('-----')
-        print('errors:')
-        err = []
-        for i in range(0, len(self.bloc_struc)):
-            err.append(1 - sum(self.megablock[i]))
-            print(err[i])
-        print(f'Sum of Errors: {sum(err)}')
-            # if sum(self.bloc_struc[i]) != 1:
-            #     print(f'error on row {i} : sums to {sum(self.bloc_struc[i])}')
+        for row in self.full_struc:
+            if sum(row) != 1:
+                print(f'failure on {row}')
+                print(f'equal to: {sum(row)}')
+
+    def show_error(self):
+        error = []
+        for item in range(0, len(self.block_struc)):
+            error.append(Dec(self.absorption_p[item][0]) - self.checkvec[item])
+        print(f'Sum of row errors: {sum(error)}')
+        print(f'Sum of squared row errors: {sum([x**2 for x in error])}')
+
     def hitting_time(self):
-        iden = np.eye(len(self.bloc_struc))
-        subt = iden - self.bloc_struc
+        iden = np.eye(len(self.block_struc))
+        subt = iden - self.block_struc
         final = np.linalg.inv(subt)
         print(final[0])
         t = sum(final[0])
@@ -252,23 +208,20 @@ grundlespite = {
         'prob inc' : Dec('0'),
         'alt inc' : Dec('-.00073'),
         'rarity' : 4
+        # },
+    # 'Sylas' : {
+    #     'base prob' : Dec('.005'),
+    #     'alt prob' : Dec('.005'),
+    #     'spec prob' : Dec('.125'),
+    #     'prob inc' : Dec('.000639'),
+    #     'alt inc' : Dec('.000639'),
+    #     'rarity' : 5
         }
     }
 
 s_time = time.process_time()
-# np.set_printoptions(precision=3)
-test = BlockGenerator(grundlespite)
-# print('generated:')
-# print(time.process_time() - s_time)
-test.test_pt_matrix()
 np.set_printoptions(precision=3)
-# printer = pprint.PrettyPrinter()
-# printer.pprint(test.endmap)
-# print(test.universe)
-# print(test.fullsize)
-print(test.bloc_struc)
-print(test.end_col)
+test = BlockGenerator(grundlespite)
+test.construct_block()
+test.show_error()
 test.hitting_time()
-# print('inverted:')
-# print(time.process_time() - s_time)
-
