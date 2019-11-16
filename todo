@@ -1,3 +1,6 @@
-add conversions to decimal for accuracy
+add conversions to decimal for accuracy [done]
 make the matrices sparse
-replace that horrid recursive conditioning with a markov chain
+replace that horrid recursive conditioning with a markov chain [done]
+multinomial corrections [no longer relevant]
+dupes
+banner definitions
