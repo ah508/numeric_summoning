@@ -3,6 +3,7 @@ import itertools
 import decimal
 import pprint
 import time
+from config import MAX_PITY, BASE_5, INC_5
 Dec = decimal.Decimal
 decimal.getcontext()
 
@@ -33,7 +34,7 @@ class BlockGenerator:
                 self.block_struc = np.vstack((self.block_struc, horz))
             except ValueError: 
                 self.block_struc = horz
-            for i in range(0, 12):
+            for i in range(0, MAX_PITY + 2):
                 self.checkvec.append(self.tenpull[i][self.chain_indices.index(vertical)][self.chain_indices.index(self.universe | frozenset('5'))]
                                     + self.tenpull[i][self.chain_indices.index(vertical)][self.chain_indices.index(self.universe)])
         self.absorption_p, absorption_s = self.get_end()
@@ -50,12 +51,12 @@ class BlockGenerator:
         c_ref = self.chain_indices
         self.n_chain_db = {}
         self.a_chain_db = {}
-        for pity in range(0, 12):# placeholder
+        for pity in range(0, MAX_PITY + 2):
             n_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)], dtype=np.dtype(Dec))
             a_chain = np.copy(n_chain)
             for vertical in self.chain_indices:
                 available = state_set - vertical
-                rate_5 = Dec('.04') + pity*Dec('.005')
+                rate_5 = BASE_5 + pity*INC_5
                 n_rate_none = 1
                 a_rate_none = 1
                 for unit in available:
@@ -81,7 +82,6 @@ class BlockGenerator:
                             n_rate_none -= rate_5
                             a_rate_none -= rate_5
                         elif self.wants[attained]['rarity'] == 5:
-                            # h_shift = horizontal | frozenset('5')
                             rate = self.wants[attained]['base prob'] + pity*self.wants[attained]['prob inc']
                             n_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate
                             a_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate
@@ -121,17 +121,16 @@ class BlockGenerator:
                         self.s_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = s_rate_5
                         s_rate_none -= s_rate_5
                     elif self.wants[attained]['rarity'] == 5:
-                        # h_shift = horizontal | frozenset('5')
                         self.s_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = self.wants[attained]['spec prob']
                         s_rate_none -= self.wants[attained]['spec prob']
 
     def find_p(self):
         self.tenpull = {}
-        for pity in range(0, 12):
+        for pity in range(0, MAX_PITY + 2):
             self.tenpull[pity] = self.sim_tenpull(pity)
 
     def sim_tenpull(self, pity):
-        if pity == 11:
+        if pity == MAX_PITY + 1:
             first = self.s_chain
             mid = np.linalg.matrix_power(self.n_chain_db[0], 8)
             end = self.a_chain_db[0]
@@ -142,7 +141,7 @@ class BlockGenerator:
         return np.linalg.multi_dot([first, mid, end])
 
     def get_block(self, horizontal, vertical):
-        block = np.zeros([12, 12]) #placeholder
+        block = np.zeros([MAX_PITY + 2, MAX_PITY + 2]) #placeholder
         gained = horizontal - vertical
         flag_5 = False
         for unit in gained:
@@ -151,14 +150,14 @@ class BlockGenerator:
         vert_index = self.chain_indices.index(vertical)
         horz_non_index = self.chain_indices.index(horizontal)
         horz_5_index = self.chain_indices.index(horizontal | frozenset('5'))
-        for pity in range(0, 12):
+        for pity in range(0, MAX_PITY + 2):
             if flag_5:
                 block[pity][0] = (self.tenpull[pity][vert_index][horz_5_index] 
                                 + self.tenpull[pity][vert_index][horz_non_index])
-            elif pity < 11:
+            elif pity < MAX_PITY + 1:
                 block[pity][0] = self.tenpull[pity][vert_index][horz_5_index]
                 block[pity][pity + 1] = self.tenpull[pity][vert_index][horz_non_index]
-            elif pity == 11:
+            elif pity == MAX_PITY + 1:
                 block[pity][0] = self.tenpull[pity][vert_index][horz_5_index]
         return block
 
@@ -190,6 +189,24 @@ class BlockGenerator:
         print(final[0])
         t = sum(final[0])
         print(t)
+
+    def simulate(self, pull_num):
+        simulated = np.linalg.matrix_power(self.full_struc, pull_num)
+        sim_res = simulated[0]
+        index = self.indices + [self.universe]
+        groups = len(index)-1
+        parts = len(sim_res)-1
+        chunk = parts//groups
+        n=0
+        
+        for i in range(0, groups):
+            if i == 0:
+                attained = ['None']
+            else:
+                attained = list(index[i])
+            print(f'P{attained} = {sum(sim_res[n:n+chunk])*100}%')
+            n=n+chunk
+        print(f'P{list(index[-1])} = {sim_res[-1]*100}%')
         
     
 grundlespite = {
@@ -208,7 +225,7 @@ grundlespite = {
         'prob inc' : Dec('0'),
         'alt inc' : Dec('-.00073'),
         'rarity' : 4
-        # },
+    #     },
     # 'Sylas' : {
     #     'base prob' : Dec('.005'),
     #     'alt prob' : Dec('.005'),
@@ -227,5 +244,6 @@ print('constructed:')
 print(time.process_time() - s_time)
 test.show_error()
 test.hitting_time()
+test.simulate(18)
 print('solved:')
 print(time.process_time() - s_time)
