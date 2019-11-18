@@ -63,14 +63,17 @@ class BlockGenerator:
             for vertical in self.chain_indices:
                 available = state_set - vertical
                 rate_5 = BASE_5 + pity*INC_5
+                cover = set()
                 n_rate_none = 1
                 a_rate_none = 1
                 for unit in available:
-                    try:
-                        if self.wants[unit]['rarity'] == 5:
-                            rate_5 -= self.wants[unit]['base prob'] + pity*self.wants[unit]['prob inc']
-                    except KeyError:
-                        pass
+                    if unit not in cover:
+                        try:
+                            if self.wants[unit]['rarity'] == 5:
+                                rate_5 -= self.wants[unit]['base prob'] + pity*self.wants[unit]['prob inc']
+                                cover.update([unit])
+                        except KeyError:
+                            pass
                 for horizontal in reversed(self.chain_indices):
                     acquisition = horizontal - vertical
                     if len(acquisition) > 1:
@@ -105,14 +108,17 @@ class BlockGenerator:
         self.s_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)], dtype=np.dtype(Dec))
         for vertical in self.chain_indices:
             available = state_set - vertical
+            cover = set()
             s_rate_5 = 1
             s_rate_none = 1
             for unit in available:
-                try:
-                    if self.wants[unit]['rarity'] == 5:
-                        s_rate_5 -= self.wants[unit]['spec prob']
-                except KeyError:
-                    pass
+                if unit not in cover:
+                    try:
+                        if self.wants[unit]['rarity'] == 5:
+                            s_rate_5 -= self.wants[unit]['spec prob']
+                            cover.update([unit])
+                    except KeyError:
+                        pass
             for horizontal in reversed(self.chain_indices):
                 acquisition = horizontal - vertical
                 if len(acquisition) > 1:
@@ -181,12 +187,38 @@ class BlockGenerator:
                 print(f'failure on {row}')
                 print(f'equal to: {sum(row)}')
 
+    def test_markov(self):
+        for chain in self.n_chain_db.keys():
+            for i in range(0, len(self.n_chain_db[chain])):
+                if sum(self.n_chain_db[chain][i]) != 1:
+                    print(f'norm failure at pity {chain} with value {sum(self.n_chain_db[chain][i])}')
+        for chain in self.a_chain_db.keys():
+            for i in range(0, len(self.a_chain_db[chain])):
+                if sum(self.a_chain_db[chain][i]) != 1:
+                    print(f'alt failure at pity {chain} on row {i} with value {sum(self.a_chain_db[chain][i])}')
+        for i in range(0, len(self.s_chain)):
+            if sum(self.s_chain[i]) != 1:
+                print(f'spec failure on row {i} with value {sum(self.a_chain_db[chain][i])}')
+
+    def test_tenpull(self):
+        for key in self.tenpull.keys():
+            for row in range(0, len(self.tenpull[key])):
+                if sum(self.tenpull[key][row]) != 1:
+                    print(f'tenpull error at pity {key} on row {row} with value {1 - sum(self.tenpull[key][row])}')
+
     def show_error(self):
         error = []
         for item in range(0, len(self.block_struc)):
             error.append(Dec(self.absorption_p[item][0]) - self.checkvec[item])
         print(f'Sum of row errors: {sum(error)}')
         print(f'Sum of squared row errors: {sum([x**2 for x in error])}')
+
+    def show_individ_error(self):
+        error = []
+        for item in range(0, len(self.block_struc)):
+            error.append(Dec(self.absorption_p[item][0]) - self.checkvec[item])
+        for err in error:
+            print(err)
 
     def hitting_time(self):
         iden = np.eye(len(self.block_struc))
@@ -222,8 +254,8 @@ grundlespite = {
         'spec prob' : Dec('.125'),
         'prob inc' : Dec('.000639'),
         'alt inc' : Dec('.000639'),
-        'rarity' : 5,
-        'number' : 1
+        'rarity' : 5, 
+        'number' : 2
         },
     'WXania' : {
         'base prob' : Dec('.02333'),
@@ -240,7 +272,8 @@ grundlespite = {
     #     'spec prob' : Dec('.125'),
     #     'prob inc' : Dec('.000639'),
     #     'alt inc' : Dec('.000639'),
-    #     'rarity' : 5
+    #     'rarity' : 5,
+    #     'number' : 1
         }
     }
 
@@ -250,6 +283,9 @@ test = BlockGenerator(grundlespite)
 test.construct_block()
 print('constructed:')
 print(time.process_time() - s_time)
+# print(test.chain_indices)
+# test.test_tenpull()
+# test.show_individ_error()
 test.show_error()
 test.hitting_time()
 test.simulate(18)
