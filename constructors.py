@@ -3,6 +3,7 @@ import itertools
 import decimal
 import pprint
 import time
+from multiset import Multiset, FrozenMultiset
 from config import MAX_PITY, BASE_5, INC_5
 Dec = decimal.Decimal
 decimal.getcontext()
@@ -10,13 +11,17 @@ decimal.getcontext()
 class BlockGenerator:
     def __init__(self, wants):
         self.wants = wants
-        self.universe = frozenset(wants.keys())
+        self.universe = Multiset()
+        for unit in wants.keys():
+            for i in range(0, wants[unit]['number']):
+                self.universe.update([unit])
+        self.universe = FrozenMultiset(self.universe)
         self.indices = []
-        self.blockmap = {}
         self.checkvec = []
         for i in range(0, len(self.universe)):
             for j in itertools.combinations(self.universe, i):
-                self.indices.append(frozenset(j))
+                if FrozenMultiset(j) not in self.indices:
+                    self.indices.append(FrozenMultiset(j))
         
     def construct_block(self):
         self.create_chains()
@@ -46,7 +51,8 @@ class BlockGenerator:
         self.chain_indices = []
         for i in range(0, len(state_set)):
             for j in itertools.combinations(state_set, i):
-                self.chain_indices.append(frozenset(j))
+                if FrozenMultiset(j) not in self.chain_indices:
+                    self.chain_indices.append(FrozenMultiset(j))
         self.chain_indices.append(state_set)
         c_ref = self.chain_indices
         self.n_chain_db = {}
@@ -216,7 +222,8 @@ grundlespite = {
         'spec prob' : Dec('.125'),
         'prob inc' : Dec('.000639'),
         'alt inc' : Dec('.000639'),
-        'rarity' : 5
+        'rarity' : 5,
+        'number' : 1
         },
     'WXania' : {
         'base prob' : Dec('.02333'),
@@ -224,7 +231,8 @@ grundlespite = {
         'spec prob' : Dec('0'),
         'prob inc' : Dec('0'),
         'alt inc' : Dec('-.00073'),
-        'rarity' : 4
+        'rarity' : 4,
+        'number' : 1
     #     },
     # 'Sylas' : {
     #     'base prob' : Dec('.005'),
