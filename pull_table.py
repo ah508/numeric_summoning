@@ -20,7 +20,7 @@ def getname(tag):
     try:
         return name.group(0)
     except AttributeError:
-        print(hold)
+        print('Name Fetch error')
         print()
 
 adventurer = {}
