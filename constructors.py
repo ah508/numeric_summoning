@@ -8,8 +8,12 @@ from config import MAX_PITY, BASE_5, INC_5
 Dec = decimal.Decimal
 decimal.getcontext()
 
-class BlockGenerator:
+class TenBlock:
     def __init__(self, wants):
+        self.TYPE = 'ten'
+        self.MAX_PITY = MAX_PITY
+        self.BASE_5 = BASE_5
+        self.INC_5 = INC_5
         self.wants = wants
         self.universe = Multiset()
         for unit in wants.keys():
@@ -22,10 +26,13 @@ class BlockGenerator:
             for j in itertools.combinations(self.universe, i):
                 if FrozenMultiset(j) not in self.indices:
                     self.indices.append(FrozenMultiset(j))
-        
-    def construct_block(self):
+
+    def generate(self):
         self.create_chains()
         self.find_p()
+        self.construct_block()
+        
+    def construct_block(self):
         self.block_struc = np.array([])
         for vertical in self.indices:
             horz = np.array([])
@@ -39,9 +46,9 @@ class BlockGenerator:
                 self.block_struc = np.vstack((self.block_struc, horz))
             except ValueError: 
                 self.block_struc = horz
-            for i in range(0, MAX_PITY + 2):
-                self.checkvec.append(self.tenpull[i][self.chain_indices.index(vertical)][self.chain_indices.index(self.universe | frozenset('5'))]
-                                    + self.tenpull[i][self.chain_indices.index(vertical)][self.chain_indices.index(self.universe)])
+            # for i in range(0, MAX_PITY + 2):
+            #     self.checkvec.append(self.tenpull[i][self.chain_indices.index(vertical)][self.chain_indices.index(self.universe | frozenset('5'))]
+            #                         + self.tenpull[i][self.chain_indices.index(vertical)][self.chain_indices.index(self.universe)])
         self.absorption_p, absorption_s = self.get_end()
         self.full_struc = np.hstack((self.block_struc, self.absorption_p))
         self.full_struc = np.vstack((self.full_struc, absorption_s))
@@ -181,45 +188,6 @@ class BlockGenerator:
             absorption_p[row] = 1 - sum(self.block_struc[row])
         return absorption_p, absorption_s
 
-    def test_pt_matrix(self):
-        for row in self.full_struc:
-            if sum(row) != 1:
-                print(f'failure on {row}')
-                print(f'equal to: {sum(row)}')
-
-    def test_markov(self):
-        for chain in self.n_chain_db.keys():
-            for i in range(0, len(self.n_chain_db[chain])):
-                if sum(self.n_chain_db[chain][i]) != 1:
-                    print(f'norm failure at pity {chain} with value {sum(self.n_chain_db[chain][i])}')
-        for chain in self.a_chain_db.keys():
-            for i in range(0, len(self.a_chain_db[chain])):
-                if sum(self.a_chain_db[chain][i]) != 1:
-                    print(f'alt failure at pity {chain} on row {i} with value {sum(self.a_chain_db[chain][i])}')
-        for i in range(0, len(self.s_chain)):
-            if sum(self.s_chain[i]) != 1:
-                print(f'spec failure on row {i} with value {sum(self.a_chain_db[chain][i])}')
-
-    def test_tenpull(self):
-        for key in self.tenpull.keys():
-            for row in range(0, len(self.tenpull[key])):
-                if sum(self.tenpull[key][row]) != 1:
-                    print(f'tenpull error at pity {key} on row {row} with value {1 - sum(self.tenpull[key][row])}')
-
-    def show_error(self):
-        error = []
-        for item in range(0, len(self.block_struc)):
-            error.append(Dec(self.absorption_p[item][0]) - self.checkvec[item])
-        print(f'Sum of row errors: {sum(error)}')
-        print(f'Sum of squared row errors: {sum([x**2 for x in error])}')
-
-    def show_individ_error(self):
-        error = []
-        for item in range(0, len(self.block_struc)):
-            error.append(Dec(self.absorption_p[item][0]) - self.checkvec[item])
-        for err in error:
-            print(err)
-
     def hitting_time(self):
         iden = np.eye(len(self.block_struc))
         subt = iden - self.block_struc
@@ -246,6 +214,96 @@ class BlockGenerator:
             n=n+chunk
         print(f'P{list(index[-1])} = {sim_res[-1]*100}%')
         
+
+class SingleBlock(TenBlock):
+    def __init__(self, wants):
+        super().__init__(wants)
+        self.TYPE = 'single'
+
+    def get_block(self, horizontal, vertical):
+        gained = horizontal - vertical
+        block = np.zeros([MAX_PITY*10 + 1, MAX_PITY*10 + 1])
+        if len(gained) > 1:
+            pass
+        else:
+            # unit = next(iter(gained))
+            flag_5 = False
+            for unit in gained:
+                if self.wants[unit]['rarity'] == 5:
+                    flag_5 = True
+            vert_index = self.chain_indices.index(vertical)
+            horz_non_index = self.chain_indices.index(horizontal)
+            horz_5_index = self.chain_indices.index(horizontal | frozenset('5'))
+            for pity in range(0, MAX_PITY*10 + 1):
+                if flag_5 and pity != MAX_PITY*10:
+                    block[pity][0] = (self.n_chain_db[pity//10][vert_index][horz_5_index] 
+                                    + self.n_chain_db[pity//10][vert_index][horz_non_index])
+                elif flag_5 and pity == MAX_PITY*10:
+                    block[pity][0] = (self.s_chain[vert_index][horz_5_index]
+                                    + self.s_chain[vert_index][horz_non_index])
+                elif pity < MAX_PITY*10:
+                    block[pity][0] = self.n_chain_db[pity//10][vert_index][horz_5_index]
+                    block[pity][pity + 1] = self.n_chain_db[pity//10][vert_index][horz_non_index]
+                elif pity == MAX_PITY*10:
+                    block[pity][0] = self.s_chain[vert_index][horz_5_index]
+        return block
+
+
+class Testers:
+    def __init__(self, subject):
+        self.subject = subject
+        for vertical in self.subject.indices:
+            if self.subject.TYPE == 'ten':
+                for i in range(0, MAX_PITY + 2):
+                    self.subject.checkvec.append(self.subject.tenpull[i][self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe | frozenset('5'))]
+                                                + self.subject.tenpull[i][self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe)])
+            elif self.subject.TYPE == 'single':
+                for i in range(0, MAX_PITY*10):
+                    self.subject.checkvec.append(self.subject.n_chain_db[i//10][self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe | frozenset('5'))]
+                                                + self.subject.n_chain_db[i//10][self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe)])
+                for i in range(MAX_PITY*10, MAX_PITY*10 + 1):
+                    self.subject.checkvec.append(self.subject.s_chain[self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe | frozenset('5'))]
+                                                + self.subject.s_chain[self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe)])
+
+    def test_pt_matrix(self):
+        for row in self.subject.full_struc:
+            if sum(row) != 1:
+                print(f'failure on {row}')
+                print(f'equal to: {sum(row)}')
+
+    def test_markov(self):
+        for chain in self.subject.n_chain_db.keys():
+            for i in range(0, len(self.subject.n_chain_db[chain])):
+                if sum(self.subject.n_chain_db[chain][i]) != 1:
+                    print(f'norm failure at pity {chain} with value {sum(self.subject.n_chain_db[chain][i])}')
+        for chain in self.subject.a_chain_db.keys():
+            for i in range(0, len(self.subject.a_chain_db[chain])):
+                if sum(self.subject.a_chain_db[chain][i]) != 1:
+                    print(f'alt failure at pity {chain} on row {i} with value {sum(self.subject.a_chain_db[chain][i])}')
+        for i in range(0, len(self.subject.s_chain)):
+            if sum(self.subject.s_chain[i]) != 1:
+                print(f'spec failure on row {i} with value {sum(self.subject.a_chain_db[chain][i])}')
+
+    def test_tenpull(self):
+        for key in self.subject.tenpull.keys():
+            for row in range(0, len(self.subject.tenpull[key])):
+                if sum(self.subject.tenpull[key][row]) != 1:
+                    print(f'tenpull error at pity {key} on row {row} with value {1 - sum(self.subject.tenpull[key][row])}')
+
+    def show_error(self):
+        error = []
+        for item in range(0, len(self.subject.block_struc)):
+            error.append(Dec(self.subject.absorption_p[item][0]) - self.subject.checkvec[item])
+        print(f'Sum of row errors: {sum(error)}')
+        print(f'Sum of squared row errors: {sum([x**2 for x in error])}')
+
+    def show_individ_error(self, tolerance):
+        error = []
+        for item in range(0, len(self.subject.block_struc)):
+            error.append(Dec(self.subject.absorption_p[item][0]) - self.subject.checkvec[item])
+        for i in range(0, len(error)):
+            if abs(error[i]) >= tolerance:
+                print(f'error of {error[i]} on row {i}')
     
 grundlespite = {
     'Akasha': {
@@ -279,14 +337,15 @@ grundlespite = {
 
 s_time = time.process_time()
 np.set_printoptions(precision=3)
-test = BlockGenerator(grundlespite)
-test.construct_block()
+test = SingleBlock(grundlespite)
+test.generate()
 print('constructed:')
 print(time.process_time() - s_time)
 # print(test.chain_indices)
 # test.test_tenpull()
-# test.show_individ_error()
-test.show_error()
+testfix = Testers(test)
+testfix.show_individ_error(0.001)
+testfix.show_error()
 test.hitting_time()
 test.simulate(18)
 print('solved:')
