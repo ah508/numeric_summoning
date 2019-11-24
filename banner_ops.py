@@ -132,33 +132,89 @@ class Banner:
                     if (unit['rarity'], unit['classification']) == (rarity, classification):
                         f_counts[rarity][classification] += 1
                 #note: very messy
-        banner_rates = copy.deepcopy(self.template)
-        template = self.template
+        banner_rates = {}
+        # template = self.template
         for rarity in ['5', '4', '3']:
-            for classification in ['dragon', 'adventurer']:
-                try:
-                    correction = Dec(1)/Dec(f_counts[rarity][classification])
-                except ZeroDivisionError:
-                    if template[rarity]['Focus']['rate'] != 0:
-                        print(f'No focus for {rarity}* {classification}')
-                        print(f'Defaulting to one unlisted focus unit.')
-                    correction = 1
-                banner_rates[rarity]['Focus'][classification] = (template[rarity]['Focus']['rate']
-                                                                *correction
-                                                                *Dec(template[rarity]['Focus'][classification][0])
-                                                                /Dec(template[rarity]['Focus'][classification][1]))
-                try:
-                    nf_correction = Dec(1)/Dec(self.pools[rarity][classification]['size'])
-                except ZeroDivisionError:
-                    print(f"Error: every {rarity}* {classification} is a focus")
-                    print('Defaulting to one unlisted nonfocus unit.')
-                    nf_correction = 1
-                banner_rates[rarity]['Non Focus'][classification] = (template[rarity]['Non Focus']['rate']
-                                                                    *nf_correction
-                                                                    *Dec(template[rarity]['Non Focus'][classification][0])
-                                                                    /Dec(template[rarity]['Non Focus'][classification][1]))
+            banner_rates[rarity] = {}
+            for unit_type in ['Focus', 'Non Focus']:
+                banner_rates[rarity][unit_type] = {}
+                for classification in ['dragon', 'adventurer']:
+                    banner_rates[rarity][unit_type][classification] = self.rate_handler(f_counts, rarity, unit_type, classification)
+        #         try:
+        #             correction = Dec(1)/Dec(f_counts[rarity][classification])
+        #         except ZeroDivisionError:
+        #             if template[rarity]['Focus']['rate'] != 0:
+        #                 print(f'No focus for {rarity}* {classification}')
+        #                 print(f'Defaulting to one unlisted focus unit.')
+        #             correction = 1
+        #         banner_rates[rarity]['Focus'][classification] = (template[rarity]['Focus']['rate']
+        #                                                         *correction
+        #                                                         *Dec(template[rarity]['Focus'][classification][0])
+        #                                                         /Dec(template[rarity]['Focus'][classification][1]))
+        #         try:
+        #             nf_correction = Dec(1)/Dec(self.pools[rarity][classification]['size'])
+        #         except ZeroDivisionError:
+        #             print(f"Error: every {rarity}* {classification} is a focus")
+        #             print('Defaulting to one unlisted nonfocus unit.')
+        #             nf_correction = 1
+        #         banner_rates[rarity]['Non Focus'][classification] = (template[rarity]['Non Focus']['rate']
+        #                                                             *nf_correction
+        #                                                             *Dec(template[rarity]['Non Focus'][classification][0])
+        #                                                             /Dec(template[rarity]['Non Focus'][classification][1]))
         self.banner_rates = banner_rates
         
+    def rate_handler(self, counts, rarity, unit_type, classification):
+        template = self.template[rarity][unit_type]
+        working_dict = {}
+        if unit_type == 'Focus':
+            try:
+                correction = Dec(1)/Dec(counts[rarity][classification])
+            except ZeroDivisionError:
+                if template['base'] != 0:
+                    print(f'No {unit_type} for {rarity}* {classification}')
+                    print(f'Defaulting to one unlisted {unit_type} unit.')
+                correction = 1
+        else:
+            try:
+                correction = Dec(1)/Dec(self.pools[rarity][classification]['size'])
+            except ZeroDivisionError:
+                if template['base'] != 0:
+                    print(f'No {unit_type} for {rarity}* {classification}')
+                    print(f'Defaulting to one unlisted {unit_type} unit.')
+                correction = 1
+        working_dict['base prob'] = (template['base']
+                                    *correction
+                                    *Dec(template[classification][0])
+                                    /Dec(template[classification][1]))
+        working_dict['prob inc'] = (template['inc']
+                                    *correction
+                                    *Dec(template[classification][0])
+                                    /Dec(template[classification][1]))
+        if rarity == '5':
+            working_dict['alt prob'] = working_dict['base prob']
+            working_dict['alt inc'] = working_dict['prob inc']
+            tot_5 = (self.template[rarity]['Focus']['base'] 
+                    + self.template[rarity]['Non Focus']['base'])
+            working_dict['spec prob'] = working_dict['base prob']/tot_5
+        elif rarity == '4':
+            tot_4 = (self.template[rarity]['Focus']['base']
+                    + self.template[rarity]['Non Focus']['base'])
+            tot_5 = (self.template['5']['Focus']['base'] 
+                    + self.template['5']['Non Focus']['base'])
+            inc_5 = (self.template['5']['Focus']['inc']
+                    + self.template['5']['Non Focus']['inc'])
+            unit_ratio = working_dict['base prob']/tot_4
+            working_dict['alt prob'] = (1 - tot_5)*unit_ratio
+            working_dict['alt inc'] = -1*(working_dict['alt prob'] - (1 - tot_5 - inc_5)*unit_ratio)
+            working_dict['spec prob'] = 0
+        else:
+            working_dict['alt prob'] = 0
+            working_dict['alt inc'] = 0
+            working_dict['spec prob'] = 0
+
+        return working_dict
+
+
     def store_banner(self):
         banner_name = input('Please give this banner a name: ')
         banner_info = {
