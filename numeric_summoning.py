@@ -259,10 +259,17 @@ elif args.simulate or args.calculate:
                     if i == 0:
                         attained = ['None']
                     else:
-                        attained = list(index[i])
+                        attained = disp_conv(index[i])
                     print(f'P{attained} = {sum(probs[n:n+chunk])*100}%')
                     n=n+chunk
-                print(f'P{list(index[-1])} = {probs[-1]*100}%')
+                print(f'P{disp_conv(index[-1])} = {probs[-1]*100}%')
+
+            def disp_conv(index):
+                out = []
+                for (element, multiplicity) in index.items():
+                    cons = element + '(' + str(multiplicity) + ')'
+                    out.append(cons)
+                return sorted(out)
             
             def proceed():
                 another_one = input(': ')
