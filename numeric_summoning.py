@@ -125,6 +125,9 @@ else:
             for unit in valid:
                 print(unit)
         else:
+            if char_name not in valid:
+                print('That unit is not on this banner.')
+                continue
             if char_name not in added_chars:
                 Banner.get_char(char_name)
                 reset = True

@@ -248,6 +248,7 @@ class FindWants:
         
     def get_char(self, char_name):
         banner = self.banner
+        hit = False
         b_foc = self.banner['focus']
         b_pool = self.banner['pool']
         b_rates = self.banner['banner rates']
@@ -260,8 +261,10 @@ class FindWants:
                     if char_name in b_pool[rarity][classification]['contents']:
                         self.wants[char_name] = b_rates[rarity]['Non Focus'][classification]
                         self.wants[char_name]['rarity'] = rarity
-                    else:
-                        print('That unit is not on this banner.')
+                        hit = True
+                        break
+        if not hit:
+            print('That unit is not on this banner.')
 
 
 
