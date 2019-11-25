@@ -167,7 +167,7 @@ class SingleBlock:
         subt = iden - self.block_struc
         final = np.linalg.inv(subt)
         t = sum(final[0])
-        print(t)
+        print(f'On average it will take {t} {self.TYPE}pulls to achieve the desired units.')
 
     def simulate(self, pull_num):
         simulated = np.linalg.matrix_power(self.full_struc, pull_num)
@@ -340,48 +340,48 @@ class Testers:
             if abs(error[i]) >= tolerance:
                 print(f'error of {error[i]} on row {i}')
     
-grundlespite = {
-    'Akasha': {
-        'base prob' : Dec('.005'),
-        'alt prob' : Dec('.005'),
-        'spec prob' : Dec('.125'),
-        'prob inc' : Dec('.000639'),
-        'alt inc' : Dec('.000639'),
-        'rarity' : 5, 
-        'number' : 2
-        },
-    'WXania' : {
-        'base prob' : Dec('.02333'),
-        'alt prob' : Dec('.14001'),
-        'spec prob' : Dec('0'),
-        'prob inc' : Dec('0'),
-        'alt inc' : Dec('-.00073'),
-        'rarity' : 4,
-        'number' : 1
-    #     },
-    # 'Sylas' : {
-    #     'base prob' : Dec('.005'),
-    #     'alt prob' : Dec('.005'),
-    #     'spec prob' : Dec('.125'),
-    #     'prob inc' : Dec('.000639'),
-    #     'alt inc' : Dec('.000639'),
-    #     'rarity' : 5,
-    #     'number' : 1
-        }
-    }
+# grundlespite = {
+#     'Akasha': {
+#         'base prob' : Dec('.005'),
+#         'alt prob' : Dec('.005'),
+#         'spec prob' : Dec('.125'),
+#         'prob inc' : Dec('.000639'),
+#         'alt inc' : Dec('.000639'),
+#         'rarity' : 5, 
+#         'number' : 2
+#         },
+#     'WXania' : {
+#         'base prob' : Dec('.02333'),
+#         'alt prob' : Dec('.14001'),
+#         'spec prob' : Dec('0'),
+#         'prob inc' : Dec('0'),
+#         'alt inc' : Dec('-.00073'),
+#         'rarity' : 4,
+#         'number' : 1
+#     #     },
+#     # 'Sylas' : {
+#     #     'base prob' : Dec('.005'),
+#     #     'alt prob' : Dec('.005'),
+#     #     'spec prob' : Dec('.125'),
+#     #     'prob inc' : Dec('.000639'),
+#     #     'alt inc' : Dec('.000639'),
+#     #     'rarity' : 5,
+#     #     'number' : 1
+#         }
+#     }
 
-s_time = time.process_time()
-np.set_printoptions(precision=3)
-test = TenBlock(grundlespite)
-# test = SingleBlock(grundlespite)
-test.generate()
-print('constructed:')
-print(time.process_time() - s_time)
-testfix = Testers(test)
-# testfix.test_tenpull()
-testfix.show_individ_error(0.001)
-testfix.show_error()
-test.hitting_time()
-test.simulate(18)
-print('solved:')
-print(time.process_time() - s_time)
+# s_time = time.process_time()
+# np.set_printoptions(precision=3)
+# test = TenBlock(grundlespite)
+# # test = SingleBlock(grundlespite)
+# test.generate()
+# print('constructed:')
+# print(time.process_time() - s_time)
+# testfix = Testers(test)
+# # testfix.test_tenpull()
+# testfix.show_individ_error(0.001)
+# testfix.show_error()
+# test.hitting_time()
+# test.simulate(18)
+# print('solved:')
+# print(time.process_time() - s_time)
