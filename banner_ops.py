@@ -255,6 +255,7 @@ class FindWants:
         if char_name in banner['focus']:
             self.wants[char_name] = b_rates[b_foc[char_name]['rarity']]['Focus'][b_foc[char_name]['classification']]
             self.wants[char_name]['rarity'] = b_foc[char_name]['rarity']
+            hit = True
         else:
             for rarity in ['5', '4', '3']:
                 for classification in ['dragon', 'adventurer']:

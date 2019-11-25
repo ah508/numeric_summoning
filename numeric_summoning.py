@@ -32,7 +32,7 @@ def factorial(n):
 
 if args.simulate or args.calculate or args.newbanner or args.deletebanner:
     print('enter "exit" at any prompt to exit the program.')
-    
+
 if args.newbanner or args.deletebanner:
     print('Ignoring other functionality for this run;')
     if args.newbanner:
@@ -57,16 +57,16 @@ if args.newbanner or args.deletebanner:
             new_banner = Banner(template)
             done = input('Add another banner? [y/n]: ')
             checkquit(done)
-            if done.lower() in ['y', 'ye', 'yes', 'yeah']:
+            if done.lower() in ['n', 'no', 'nope', 'nay']:
                 add_banners = False
     if args.deletebanner:
         from banner_ops import delete
         import os
         namepath = os.getcwd() + '\\banner_storage'
         d_banner = True
+        print('Which banner would you like to delete?')
+        print('enter "names" to see a list of currently stored banners.')
         while d_banner:
-            print('Which banner would you like to delete?')
-            print('enter "names" to see a list of currently stored banners.')
             banner_name = input('Enter banner name: ')
             checkquit(banner_name)
             if banner_name == 'names':
@@ -86,7 +86,7 @@ if args.newbanner or args.deletebanner:
                         print(f'{banner_name} was not deleted')
                 done = input('Would you like to delete a different banner? [y/n]: ')
                 checkquit(done)
-                if done.lower() in ['y', 'ye', 'yes', 'yeah']:
+                if done.lower() in ['n', 'no', 'nope', 'nay']:
                     d_banner = False
     print('File operations complete.')
 
@@ -162,7 +162,7 @@ elif args.simulate or args.calculate:
                 if change_num.lower() in ['y', 'ye', 'yes', 'yeah']:
                     reset = True
                     while reset:
-                        number = input('How many do you want to pull?')
+                        number = input('How many do you want to pull? ')
                         checkquit(number)
                         try:
                             number = int(number)
@@ -180,10 +180,13 @@ elif args.simulate or args.calculate:
                             print('That is not a valid target.')
         another_char = input('Would you like to add another character to the index? [y/n]: ')
         checkquit(another_char)
-        if another_char.lower() in ['y', 'ye', 'yes', 'yeah']:
-            pass
-        else:
+        if another_char.lower() in ['n', 'no', 'nope', 'nay']:
             more_chars = False
+
+    if Banner.wants == []:
+        print('You have not selected any targets.')
+        print('Exiting program')
+        exit()
 
     #sanity check
     ns = []
@@ -232,33 +235,58 @@ elif args.simulate or args.calculate:
             ChainStruc.simulate(num_pulls)
             sim_time = time.process_time() - s_time
             print(f'Simulated: {sim_time} s')
+
         elif num_pulls == 'one by one':
             import numpy as np
-            step = ChainStruc.full_struc
+            pull_count = 0
+            step = np.copy(ChainStruc.full_struc)
+            initial = np.zeros([len(step), len(step)]) 
+            initial[0][0] = 1
+            index = ChainStruc.indices + [ChainStruc.universe]
+            groups = len(index)-1
             stop = False
-            print('Press enter to continue pulling.')
-            print('Input "stop" when you wish to stop.')
-            while not stop:
+
+            def output(step):
+                probs = step[0]
+                parts = len(probs)-1
+                chunk = parts//groups
+                n=0
+                for i in range(0, groups):
+                    if i == 0:
+                        attained = ['None']
+                    else:
+                        attained = list(index[i])
+                    print(f'P{attained} = {sum(probs[n:n+chunk])*100}%')
+                    n=n+chunk
+                print(f'P{list(index[-1])} = {probs[-1]*100}%')
+            
+            def proceed():
                 another_one = input(': ')
                 checkquit(another_one)
                 if another_one.lower() == 'stop':
-                    stop = True
+                    return True
+                return False
+
+            print('Press enter to continue pulling.')
+            print('Input "stop" when you wish to stop.')
+            stop = proceed()
+            while not stop:
+                if pull_count == 0:
+                    output(initial)
+                    print(pull_count)
+                    pull_count += 1
+                elif pull_count == 1:
+                    output(step)
+                    print(pull_count)
+                    pull_count += 1
                 else:
-                    step = step @ ChainStruc.full_struc
-                    probs = step[0]
-                    index = ChainStruc.indices + [ChainStruc.universe]
-                    groups = len(index)-1
-                    parts = len(probs)-1
-                    chunk = parts//groups
-                    n=0
-                    for i in range(0, groups):
-                        if i == 0:
-                            attained = ['None']
-                        else:
-                            attained = list(index[i])
-                        print(f'P{attained} = {sum(probs[n:n+chunk])*100}%')
-                        n=n+chunk
-                    print(f'P{list(index[-1])} = {probs[-1]*100}%')
+                    step = ChainStruc.full_struc @ step
+                    output(step)
+                    print(pull_count)
+                    pull_count += 1
+                stop = proceed()
+                       
+                    
         else:
             print('That was not a valid number of pulls.')
             print('Try a non-negative integer or "one by one" next time.')

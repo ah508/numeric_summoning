@@ -4,3 +4,5 @@ replace that horrid recursive conditioning with a markov chain [done]
 multinomial corrections [no longer relevant]
 dupes [done]
 banner definitions [started]
+add a pool history
+make a way to add more templates from the main program
