@@ -187,10 +187,17 @@ class SingleBlock:
             if i == 0:
                 attained = ['None']
             else:
-                attained = list(index[i])
+                attained = self.disp_conv(index[i])
             print(f'P{attained} = {sum(sim_res[n:n+chunk])*100}%')
             n=n+chunk
-        print(f'P{list(index[-1])} = {sim_res[-1]*100}%')
+        print(f'P{self.disp_conv(index[-1])} = {sim_res[-1]*100}%')
+    
+    def disp_conv(self, index):
+        out = []
+        for (element, multiplicity) in index.items():
+            cons = element + '(' + str(multiplicity) + ')'
+            out.append(cons)
+        return sorted(out)
         
 
 class TenBlock(SingleBlock):
