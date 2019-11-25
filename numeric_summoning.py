@@ -1,5 +1,6 @@
 import argparse
 import inspect
+from pull_table import pull_table
 from banner_ops import checkquit
 
 parser = argparse.ArgumentParser(description='Determine the expected number of pulls to achieve a desired result.')
@@ -20,13 +21,18 @@ parser.add_argument('-t', '--tests', action='store_true',
 
 args = parser.parse_args()
 
+if args.update:
+    pull_table()
+
 def factorial(n):
     if n <= 0:
         return 1
     else:
         return n*factorial(n-1)
 
-print('enter "exit" at any prompt to exit the program.')
+if args.simulate or args.calculate or args.newbanner or args.deletebanner:
+    print('enter "exit" at any prompt to exit the program.')
+    
 if args.newbanner or args.deletebanner:
     print('Ignoring other functionality for this run;')
     if args.newbanner:
@@ -84,7 +90,7 @@ if args.newbanner or args.deletebanner:
                     d_banner = False
     print('File operations complete.')
 
-else:
+elif args.simulate or args.calculate:
     import os
     import time
     import config
