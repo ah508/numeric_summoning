@@ -12,6 +12,8 @@ parser.add_argument('--update', action='store_true',
                     help='Updates the pull table by scraping the wiki.')
 parser.add_argument('--mode', choices=['single', 'ten'], default='ten',
                     help='Signifies whether to use singlepulls or tenpulls.')
+parser.add_argument('--accurate', action='store_true',
+                    help='Use more accurate numerical information - greatly increases runtime.')
 parser.add_argument('-c', '--calculate', action='store_false',
                     help='Suppresses calculation of expected value.')
 parser.add_argument('-s', '--simulate', action='store_true',
@@ -97,6 +99,8 @@ elif args.simulate or args.calculate:
     from banner_ops import FindWants
     Banner = FindWants()
     namepath = os.getcwd() + '\\banner_storage'
+    if args.accurate:
+        config.MODE = 'Accurate'
 
     print('Which banner would you like to pull on?')
     print('enter "names" to see a list of currently stored banners.')

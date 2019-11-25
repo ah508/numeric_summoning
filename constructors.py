@@ -4,7 +4,7 @@ import decimal
 import pprint
 import time
 from multiset import Multiset, FrozenMultiset
-from config import MAX_PITY, BASE_5, INC_5
+from config import MAX_PITY, BASE_5, INC_5, MODE
 Dec = decimal.Decimal
 decimal.getcontext()
 
@@ -60,7 +60,10 @@ class SingleBlock:
         c_ref = self.chain_indices
         self.n_chain_db = {}
         for pity in range(0, MAX_PITY + 2):
-            n_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)], dtype=np.dtype(Dec))
+            if MODE == 'Accurate':
+                n_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)], dtype=np.dtype(Dec))
+            if MODE == 'Approximate':
+                n_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)])
             for vertical in self.chain_indices:
                 available = state_set - vertical
                 rate_5 = BASE_5 + pity*INC_5
@@ -96,7 +99,10 @@ class SingleBlock:
                             n_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate
                             n_rate_none -= rate
             self.n_chain_db[pity] = n_chain
-        self.s_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)], dtype=np.dtype(Dec))
+        if MODE == 'Accurate':
+            self.s_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)], dtype=np.dtype(Dec))
+        elif MODE == 'Approximate':
+            self.s_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)])
         for vertical in self.chain_indices:
             available = state_set - vertical
             cover = set()
@@ -240,7 +246,10 @@ class TenBlock(SingleBlock):
         c_ref = self.chain_indices
         self.a_chain_db = {}
         for pity in range(0, MAX_PITY + 2):
-            a_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)], dtype=np.dtype(Dec))
+            if MODE == 'Accurate':
+                a_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)], dtype=np.dtype(Dec))
+            elif MODE == 'Approximate':
+                a_chain = np.zeros([len(self.chain_indices), len(self.chain_indices)])
             for vertical in self.chain_indices:
                 available = state_set - vertical
                 rate_5 = BASE_5 + pity*INC_5
