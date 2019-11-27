@@ -26,12 +26,6 @@ args = parser.parse_args()
 if args.update:
     pull_table()
 
-def factorial(n):
-    if n <= 0:
-        return 1
-    else:
-        return n*factorial(n-1)
-
 if args.simulate or args.calculate or args.newbanner or args.deletebanner:
     print('enter "exit" at any prompt to exit the program.')
 
@@ -198,9 +192,8 @@ elif args.simulate or args.calculate:
         ns += [Banner.wants[unit]['number']]
     bignum = 1
     for num in ns:
-        bignum *= factorial(num)
-    multinum = factorial(sum(ns))//bignum
-    if multinum > 100:
+        bignum *= (num + 1)
+    if bignum > 100:
         print('Hey... Look... This is a pretty large matrix.')
         print("I don't want to say you shouldn't go and compute it")
         print('But if you do, it may be very time consuming and resource intensive.')
