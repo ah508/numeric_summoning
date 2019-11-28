@@ -250,6 +250,23 @@ class TenBlock(SingleBlock):
             elif pity == MAX_PITY + 1:
                 block[pity][0] = self.tenpull[pity][vert_index][horz_5_index]
         return block
+
+    def get_end(self):
+        absorption_p = []
+        absorption_s = np.zeros([1, len(self.block_struc) + 1])
+        absorption_s[0][-1] = 1
+        non_index = self.chain_indices.index(self.universe)
+        five_index = self.chain_indices.index(self.universe | frozenset('5'))
+        for vertical in self.indices:
+            vert_index = self.chain_indices.index(vertical)
+            column = np.zeros([MAX_PITY + 2, 1])
+            for pity in range(0, MAX_PITY + 2):
+                column[pity] = (self.tenpull[pity][vert_index][non_index] + self.tenpull[pity][vert_index][five_index])
+            try:
+                absorption_p = np.vstack((absorption_p, column))
+            except ValueError: 
+                absorption_p = column
+        return absorption_p, absorption_s
     
     def create_a_chains(self):
         state_set = self.universe | frozenset('5')
