@@ -310,6 +310,8 @@ elif args.simulate or args.calculate:
         Test.test_struc()
         Test.image_struc()
         Test.show_error()
+        diag_time = time.process_time() - s_time
+        print(f'Diagnostics: {diag_time} s')
 
 
 

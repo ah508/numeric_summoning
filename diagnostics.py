@@ -114,12 +114,9 @@ class SingleTester(One):
         
     def image_struc(self):
         if pillowtalk:
-            if not self.chain_gen:
-                self.create_chains()
-                self.chain_gen = True
-            if not self.block_gen:
-                self.construct_block()
-                self.block_gen = True
+            if not self.check_gen:
+                self.test_struc()
+                self.check_gen = True
             block_path = os.getcwd() + '\\diagnostic_images\\blocks\\block_struc.png'
             full_path = os.getcwd() + '\\diagnostic_images\\blocks\\full_struc.png'
             self.imagesaver(self.block_struc, block_path)
