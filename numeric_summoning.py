@@ -289,8 +289,6 @@ elif args.simulate or args.calculate:
                     print(pull_count)
                     pull_count += 1
                 stop = proceed()
-                       
-                    
         else:
             print('That was not a valid number of pulls.')
             print('Try a non-negative integer or "one by one" next time.')
@@ -301,7 +299,17 @@ elif args.simulate or args.calculate:
         print(f'Calculated: {calc_time} s')
 
     if args.tests:
-        test = Testers(ChainStruc)
-        print("This feature hasn't been implemented yet.")
+        import diagnostics
+        if args.mode == 'single':
+            Test = diagnostics.SingleTester(Banner.wants)  
+        if args.mode == 'ten':
+            Test = diagnostics.TenTester(Banner.wants)
+        Test.test_chains()
+        if args.mode == 'ten':
+            Test.image_tenpull()
+        Test.test_struc()
+        Test.image_struc()
+        Test.show_error()
+
 
 
