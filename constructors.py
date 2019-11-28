@@ -135,7 +135,7 @@ class SingleBlock:
 
     def get_block(self, horizontal, vertical):
         gained = horizontal - vertical
-        block = np.zeros([MAX_PITY*10 + 1, MAX_PITY*10 + 1])
+        block = np.zeros([MAX_PITY*10 + 2, MAX_PITY*10 + 2])
         if len(gained) > 1:
             pass
         else:
@@ -146,17 +146,17 @@ class SingleBlock:
             vert_index = self.chain_indices.index(vertical)
             horz_non_index = self.chain_indices.index(horizontal)
             horz_5_index = self.chain_indices.index(horizontal | frozenset('5'))
-            for pity in range(0, MAX_PITY*10 + 1):
-                if flag_5 and pity != MAX_PITY*10:
+            for pity in range(0, MAX_PITY*10 + 2):
+                if flag_5 and pity != MAX_PITY*10 + 1:
                     block[pity][0] = (self.n_chain_db[pity//10][vert_index][horz_5_index] 
                                     + self.n_chain_db[pity//10][vert_index][horz_non_index])
-                elif flag_5 and pity == MAX_PITY*10:
+                elif flag_5 and pity == MAX_PITY*10 + 1:
                     block[pity][0] = (self.s_chain[vert_index][horz_5_index]
                                     + self.s_chain[vert_index][horz_non_index])
-                elif pity < MAX_PITY*10:
+                elif pity < MAX_PITY*10 + 1:
                     block[pity][0] = self.n_chain_db[pity//10][vert_index][horz_5_index]
                     block[pity][pity + 1] = self.n_chain_db[pity//10][vert_index][horz_non_index]
-                elif pity == MAX_PITY*10:
+                elif pity == MAX_PITY*10 + 1:
                     block[pity][0] = self.s_chain[vert_index][horz_5_index]
         return block
 
