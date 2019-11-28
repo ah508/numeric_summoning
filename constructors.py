@@ -72,7 +72,7 @@ class SingleBlock:
                 for unit in available:
                     if unit not in cover:
                         try:
-                            if self.wants[unit]['rarity'] == 5:
+                            if self.wants[unit]['rarity'] == '5':
                                 rate_5 -= self.wants[unit]['base prob'] + pity*self.wants[unit]['prob inc']
                                 cover.update([unit])
                         except KeyError:
@@ -90,7 +90,7 @@ class SingleBlock:
                         if attained == '5':
                             n_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate_5
                             n_rate_none -= rate_5
-                        elif self.wants[attained]['rarity'] == 5:
+                        elif self.wants[attained]['rarity'] == '5':
                             rate = self.wants[attained]['base prob'] + pity*self.wants[attained]['prob inc']
                             n_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate
                             n_rate_none -= rate
@@ -111,7 +111,7 @@ class SingleBlock:
             for unit in available:
                 if unit not in cover:
                     try:
-                        if self.wants[unit]['rarity'] == 5:
+                        if self.wants[unit]['rarity'] == '5':
                             s_rate_5 -= self.wants[unit]['spec prob']
                             cover.update([unit])
                     except KeyError:
@@ -129,7 +129,7 @@ class SingleBlock:
                     if attained == '5':
                         self.s_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = s_rate_5
                         s_rate_none -= s_rate_5
-                    elif self.wants[attained]['rarity'] == 5:
+                    elif self.wants[attained]['rarity'] == '5':
                         self.s_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = self.wants[attained]['spec prob']
                         s_rate_none -= self.wants[attained]['spec prob']
 
@@ -141,7 +141,7 @@ class SingleBlock:
         else:
             flag_5 = False
             for unit in gained:
-                if self.wants[unit]['rarity'] == 5:
+                if self.wants[unit]['rarity'] == '5':
                     flag_5 = True
             vert_index = self.chain_indices.index(vertical)
             horz_non_index = self.chain_indices.index(horizontal)
@@ -232,7 +232,7 @@ class TenBlock(SingleBlock):
         gained = horizontal - vertical
         flag_5 = False
         for unit in gained:
-            if self.wants[unit]['rarity'] == 5:
+            if self.wants[unit]['rarity'] == '5':
                 flag_5 = True
         vert_index = self.chain_indices.index(vertical)
         horz_non_index = self.chain_indices.index(horizontal)
@@ -265,7 +265,7 @@ class TenBlock(SingleBlock):
                 for unit in available:
                     if unit not in cover:
                         try:
-                            if self.wants[unit]['rarity'] == 5:
+                            if self.wants[unit]['rarity'] == '5':
                                 rate_5 -= self.wants[unit]['base prob'] + pity*self.wants[unit]['prob inc']
                                 cover.update([unit])
                         except KeyError:
@@ -283,7 +283,7 @@ class TenBlock(SingleBlock):
                         if attained == '5':
                             a_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate_5
                             a_rate_none -= rate_5
-                        elif self.wants[attained]['rarity'] == 5:
+                        elif self.wants[attained]['rarity'] == '5':
                             rate = self.wants[attained]['base prob'] + pity*self.wants[attained]['prob inc']
                             a_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = rate
                             a_rate_none -= rate
