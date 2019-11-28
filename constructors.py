@@ -21,7 +21,6 @@ class SingleBlock:
                 self.universe.update([unit])
         self.universe = FrozenMultiset(self.universe)
         self.indices = []
-        self.checkvec = []
         for i in range(0, len(self.universe)):
             for j in itertools.combinations(self.universe, i):
                 if FrozenMultiset(j) not in self.indices:
@@ -147,15 +146,19 @@ class SingleBlock:
             horz_non_index = self.chain_indices.index(horizontal)
             horz_5_index = self.chain_indices.index(horizontal | frozenset('5'))
             for pity in range(0, MAX_PITY*10 + 2):
+                if pity == 0:
+                    pity_shift = 1
+                else:
+                    pity_shift = pity
                 if flag_5 and pity != MAX_PITY*10 + 1:
-                    block[pity][0] = (self.n_chain_db[pity//10][vert_index][horz_5_index] 
-                                    + self.n_chain_db[pity//10][vert_index][horz_non_index])
+                    block[pity][0] = (self.n_chain_db[(pity_shift-1)//10][vert_index][horz_5_index] 
+                                    + self.n_chain_db[(pity_shift-1)//10][vert_index][horz_non_index])
                 elif flag_5 and pity == MAX_PITY*10 + 1:
                     block[pity][0] = (self.s_chain[vert_index][horz_5_index]
                                     + self.s_chain[vert_index][horz_non_index])
                 elif pity < MAX_PITY*10 + 1:
-                    block[pity][0] = self.n_chain_db[pity//10][vert_index][horz_5_index]
-                    block[pity][pity + 1] = self.n_chain_db[pity//10][vert_index][horz_non_index]
+                    block[pity][0] = self.n_chain_db[(pity_shift-1)//10][vert_index][horz_5_index]
+                    block[pity][pity + 1] = self.n_chain_db[(pity_shift-1)//10][vert_index][horz_non_index]
                 elif pity == MAX_PITY*10 + 1:
                     block[pity][0] = self.s_chain[vert_index][horz_5_index]
         return block
