@@ -128,6 +128,7 @@ elif args.simulate or args.calculate:
         if char_name == 'names':
             for unit in valid:
                 print(unit)
+            continue
         else:
             if char_name not in valid:
                 print('That unit is not on this banner.')
