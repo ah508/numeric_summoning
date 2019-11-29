@@ -207,7 +207,6 @@ elif args.simulate or args.calculate:
             quit()
     ##
 
-    from constructors import Testers
     if args.mode == 'single':
         from constructors import SingleBlock
         Chain = SingleBlock

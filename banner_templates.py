@@ -62,14 +62,14 @@ default_no_3f = {
 default_gala = {
     '5' : {
         'Focus' : {
-            'base' : Dec('0.028'),
-            'inc' : Dec('0.0023'),
-            'adventurer' :  [5, 9],
-            'dragon' : [4, 9]
+            'base' : Dec('0.005'),
+            'inc' : Dec('0.0004'),
+            'adventurer' :  [1, 1],
+            'dragon' : [0, 1]
         },
         'Non Focus' : {
-            'base' : Dec('0.032'),
-            'inc' : Dec('0.0027'),
+            'base' : Dec('0.055'),
+            'inc' : Dec('0.0046'),
             'adventurer' : [5, 11],
             'dragon' : [6, 11]
         }
@@ -84,8 +84,8 @@ default_gala = {
         'Non Focus' : {
             'base' : Dec('0.16'),
             'inc' : Dec('0'),
-            'adventurer' : [101, 180],
-            'dragon' : [79, 180]
+            'adventurer' : [171, 320],
+            'dragon' : [149, 320]
         }
     },
     '3' : {
@@ -101,5 +101,8 @@ default_gala = {
             'adventurer' : [3, 5],
             'dragon' : [2, 5]
         }
-    }
+    },
+    'max pity' : 6
 }
+#NOTE: the nonfocus 4* rate is really weird. the true value is
+#probably something else entirely.
