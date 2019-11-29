@@ -163,7 +163,7 @@ class SingleBlock:
                     block[pity][0] = self.s_chain[vert_index][horz_5_index]
         return block
 
-    def get_end(self):
+    def get_end(self): #note: find some way to make this more accurate
         absorption_p = np.zeros([len(self.block_struc), 1])
         absorption_s = np.zeros([1, len(self.block_struc) + 1])
         absorption_s[0][-1] = 1
@@ -313,68 +313,6 @@ class TenBlock(SingleBlock):
                             a_rate_none -= a_rate
             self.a_chain_db[pity] = a_chain
     
-
-class Testers:
-    def __init__(self, subject):
-        self.subject = subject
-        for vertical in self.subject.indices:
-            if self.subject.TYPE == 'ten':
-                for i in range(0, MAX_PITY + 2):
-                    self.subject.checkvec.append(self.subject.tenpull[i][self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe | frozenset('5'))]
-                                                + self.subject.tenpull[i][self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe)])
-            elif self.subject.TYPE == 'single':
-                for i in range(0, MAX_PITY*10):
-                    self.subject.checkvec.append(self.subject.n_chain_db[i//10][self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe | frozenset('5'))]
-                                                + self.subject.n_chain_db[i//10][self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe)])
-                for i in range(MAX_PITY*10, MAX_PITY*10 + 1):
-                    self.subject.checkvec.append(self.subject.s_chain[self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe | frozenset('5'))]
-                                                + self.subject.s_chain[self.subject.chain_indices.index(vertical)][self.subject.chain_indices.index(self.subject.universe)])
-
-    def test_pt_matrix(self):
-        for row in self.subject.full_struc:
-            if sum(row) != 1:
-                print(f'failure on {row}')
-                print(f'equal to: {sum(row)}')
-
-    def test_markov(self):
-        for chain in self.subject.n_chain_db.keys():
-            for i in range(0, len(self.subject.n_chain_db[chain])):
-                if sum(self.subject.n_chain_db[chain][i]) != 1:
-                    print(f'norm failure at pity {chain} with value {sum(self.subject.n_chain_db[chain][i])}')
-        try:
-            for chain in self.subject.a_chain_db.keys():
-                for i in range(0, len(self.subject.a_chain_db[chain])):
-                    if sum(self.subject.a_chain_db[chain][i]) != 1:
-                        print(f'alt failure at pity {chain} on row {i} with value {sum(self.subject.a_chain_db[chain][i])}')
-        except AttributeError:
-            pass
-        for i in range(0, len(self.subject.s_chain)):
-            if sum(self.subject.s_chain[i]) != 1:
-                print(f'spec failure on row {i} with value {sum(self.subject.a_chain_db[chain][i])}')
-
-    def test_tenpull(self):
-        try:
-            for key in self.subject.tenpull.keys():
-                for row in range(0, len(self.subject.tenpull[key])):
-                    if sum(self.subject.tenpull[key][row]) != 1:
-                        print(f'tenpull error at pity {key} on row {row} with value {1 - sum(self.subject.tenpull[key][row])}')
-        except AttributeError:
-            print('Not a valid test.')
-
-    def show_error(self):
-        error = []
-        for item in range(0, len(self.subject.block_struc)):
-            error.append(Dec(self.subject.absorption_p[item][0]) - self.subject.checkvec[item])
-        print(f'Sum of row errors: {sum(error)}')
-        print(f'Sum of squared row errors: {sum([x**2 for x in error])}')
-
-    def show_individ_error(self, tolerance):
-        error = []
-        for item in range(0, len(self.subject.block_struc)):
-            error.append(Dec(self.subject.absorption_p[item][0]) - self.subject.checkvec[item])
-        for i in range(0, len(error)):
-            if abs(error[i]) >= tolerance:
-                print(f'error of {error[i]} on row {i}')
     
 # grundlespite = {
 #     'Akasha': {

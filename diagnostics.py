@@ -6,7 +6,7 @@ import numpy as np
 import decimal
 Dec = decimal.Decimal
 decimal.getcontext()
-from config import MAX_PITY
+from config import MAX_PITY, MODE
 try:
     import PIL
     from PIL import Image
@@ -27,7 +27,8 @@ class SingleTester(One):
             os.makedirs(os.getcwd() + '\\diagnostic_images\\chains')
         self.chain_gen = False
         self.block_gen = False
-        self.check_gen = True
+        self.check_gen = False
+        self.error_gen = False
 
     def clear(self):
         path = os.getcwd() + '\\diagnostic_images'
@@ -45,28 +46,36 @@ class SingleTester(One):
         holding_array = (255*holding_array).astype(np.uint8)
         holding_image = Image.fromarray(holding_array, 'L')
         holding_image.save(path)
+
+    def tolerance_check(self, source, tolerance, fail_type):
+        try:
+            for chain in source.keys():
+                for row in range(0, len(source[chain])):
+                    if abs(sum(source[chain][row]) - 1) > tolerance:
+                        print(f'{fail_type} failure at pity {chain} on row {row} with value {sum(source[chain][row])}')
+        except AttributeError:
+            for row in range(0, len(source)):
+                if abs(sum(source[row]) - 1) > tolerance:
+                    print(f'{fail_type} failure on row {row} with value {sum(source[row])}')
         
-    def test_chains(self):
+    def test_chains(self, tolerance=0.000001):
         self.create_chains()
         self.chain_gen = True
-        self.test_n_chains()
-        self.test_s_chains()
+        self.tolerance_check(self.n_chain_db, tolerance, 'norm')
+        self.tolerance_check(self.s_chain, tolerance, 'spec')
+        self.image_chains()
+        
+    def image_chains(self):
         if pillowtalk:
+            if not self.chain_gen:
+                self.create_chains()
+                self.chain_gen = True
             self.image_n_chains()
             self.image_s_chains()
         else:
             print('imaging is disabled.')
             print('if you want, you can write your own script to check them manually')
             print("but I don't recommend that")
-
-    def test_n_chains(self):
-        if not self.chain_gen:
-            self.create_chains()
-            self.chain_gen = True
-        for chain in self.n_chain_db.keys():
-            for row in range(0, len(self.n_chain_db[chain])):
-                if sum(self.n_chain_db[chain][row]) != 1:
-                    print(f'norm failure at pity {chain} on row {row} with value {sum(self.n_chain_db[chain][row])}')
 
     def image_n_chains(self):
         if pillowtalk:
@@ -77,14 +86,6 @@ class SingleTester(One):
             for pity_level in self.n_chain_db.keys():
                 n_path = gen_path + '\\n_chain_' + str(pity_level) + '.png'
                 self.imagesaver(self.n_chain_db[pity_level], n_path)
-
-    def test_s_chains(self):
-        if not self.chain_gen:
-            self.create_chains()
-            self.chain_gen = True
-        for row in range(0, len(self.s_chain)):
-            if sum(self.s_chain[row]) != 1:
-                print(f'spec failure on row {row} with value {sum(self.s_chain[row])}')
 
     def image_s_chains(self):
         if pillowtalk:
@@ -126,32 +127,34 @@ class SingleTester(One):
             print('if you want, you can write your own script to check them manually')
             print("but I don't recommend that")
 
+    def error_loc(self):
+        self.error = []
+        for item in range(0, len(self.block_struc)):
+            if MODE == 'Accurate':
+                self.error.append(Dec(self.absorption_p[item][0]) - self.checkvec[item])
+            else:
+                self.error.append(self.absorption_p[item][0] - self.checkvec[item])
+        self.error_gen = True
+        
     def show_error(self):
         if not self.check_gen:
             self.test_struc()
-            self.check_gen = True
-        error = []
-        for item in range(0, len(self.block_struc)):
-            if isinstance(self.checkvec[item], decimal.Decimal):
-                error.append(Dec(self.absorption_p[item][0]) - self.checkvec[item])
-            else:
-                error.append(self.absorption_p[item][0] - self.checkvec[item])
-        print(f'Sum of row errors: {sum(error)}')
-        print(f'Sum of squared row errors: {sum([x**2 for x in error])}')
+        if not self.error_gen:
+            self.error_loc()
+            self.error_gen = True
+        print(f'Sum of row errors: {sum(self.error)}')
+        print(f'Sum of squared row errors: {sum([x**2 for x in self.error])}')
 
     def show_individ_error(self, tolerance):
         if not self.check_gen:
             self.test_struc()
             self.check_gen = True
-        error = []
-        for item in range(0, len(self.block_struc)):
-            if isinstance(self.checkvec[item], decimal.Decimal):
-                error.append(Dec(self.absorption_p[item][0]) - self.checkvec[item])
-            else:
-                error.append(self.absorption_p[item][0] - self.checkvec[item])
-        for i in range(0, len(error)):
-            if abs(error[i]) >= tolerance:
-                print(f'error of {error[i]} on row {i}')
+        if not self.error_gen:
+            self.error_loc()
+            self.error_gen = True
+        for i in range(0, len(self.error)):
+            if abs(self.error[i]) >= tolerance:
+                print(f'error of {self.error[i]} on row {i}')
     
 class TenTester(Ten, SingleTester):
     def __init__(self, wants):
@@ -162,15 +165,22 @@ class TenTester(Ten, SingleTester):
         self.tenpull_gen = False
         self.a_chain_gen = False
 
-    def test_chains(self):
+    def test_chains(self, tolerance=0.000001):
         self.create_chains()
         self.create_a_chains()
         self.chain_gen = True
         self.a_chain_gen = True
-        self.test_n_chains()
-        self.test_a_chains()
-        self.test_s_chains()
+        self.tolerance_check(self.n_chain_db, tolerance, 'norm')
+        self.tolerance_check(self.a_chain_db, tolerance, 'alt')
+        self.tolerance_check(self.s_chain, tolerance, 'spec')
+        self.image_chains()
+
+    def image_chains(self):
         if pillowtalk:
+            if not self.chain_gen:
+                self.create_chains()
+            if not self.a_chain_gen:
+                self.create_a_chains()
             self.image_n_chains()
             self.image_a_chains()
             self.image_s_chains()
@@ -179,15 +189,6 @@ class TenTester(Ten, SingleTester):
             print('if you want, you can write your own script to check them manually')
             print("but I don't recommend that")
 
-    def test_a_chains(self):
-        if not self.a_chain_gen:
-            self.create_a_chains()
-            self.a_chain_gen = True
-        for chain in self.a_chain_db.keys():
-            for row in range(0, len(self.a_chain_db[chain])):
-                if sum(self.a_chain_db[chain][row]) != 1:
-                    print(f'alt failure at pity {chain} on row {row} with value {sum(self.a_chain_db[chain][row])}')
-    
     def image_a_chains(self):
         if pillowtalk:
             if not self.a_chain_gen:
@@ -244,8 +245,6 @@ class TenTester(Ten, SingleTester):
             self.construct_block()
             self.block_gen = True
         self.checkvec = []
-        for vertical in self.indices:
-            for i in range(0, MAX_PITY + 2):
-                self.checkvec.append(self.tenpull[i][self.chain_indices.index(vertical)][self.chain_indices.index(self.universe | frozenset('5'))]
-                                    + self.tenpull[i][self.chain_indices.index(vertical)][self.chain_indices.index(self.universe)])
+        for i in range(0, len(self.block_struc)):
+            self.checkvec.append(1 - sum(self.block_struc[i]))
         self.check_gen = True
