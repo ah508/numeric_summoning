@@ -27,6 +27,13 @@ def checkquit(s):
         if s == 'exit':
             exit()
 
+def checkname(charname):
+    if charname == "Poli'ahu":
+        return 'Poliʻahu'
+    if charname == 'Juggernaut':
+        return 'Juggernaut (Dragon)'
+    return charname
+
 class Banner:
     def __init__(self, template):
         with open("pools.json", "r") as f:
@@ -102,8 +109,7 @@ class Banner:
         while breaker == 0:
             new_focus = input('Please add a unit to the banner [NOTE - very picky]: ')
             checkquit(new_focus)
-            if new_focus == "Poli'ahu":
-                new_focus = 'Poliʻahu'
+            new_focus = checkname(new_focus)
             not_found = True
             for rarity in ['5', '4', '3']:
                 for classification in ['adventurer', 'dragon']:

@@ -1,7 +1,7 @@
 import argparse
 import inspect
 from pull_table import pull_table
-from banner_ops import checkquit
+from banner_ops import checkquit, checkname
 
 parser = argparse.ArgumentParser(description='Determine the expected number of pulls to achieve a desired result.')
 parser.add_argument('-nb', '--newbanner', action='store_true',
@@ -123,8 +123,7 @@ elif args.simulate or args.calculate:
     while more_chars:
         char_name = input('Enter character name: ')
         checkquit(char_name)
-        if char_name == "Poli'ahu":
-            char_name = 'Poliʻahu'
+        char_name = checkname(char_name)
         if char_name == 'names':
             for unit in valid:
                 print(unit)
