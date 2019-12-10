@@ -1,5 +1,5 @@
 add conversions to decimal for accuracy [done]
-make the matrices sparse
+make the matrices sparse [probably not viable]
 replace that horrid recursive conditioning with a markov chain [done]
 multinomial corrections [no longer relevant]
 dupes [done]
