@@ -232,65 +232,15 @@ elif args.simulate or args.calculate:
             sim_time = time.process_time() - s_time
             print(f'Simulated: {sim_time} s')
 
+        elif num_pulls == 'breakpoint':
+            ChainStruc.onebyone(mode='auto')
+
         elif num_pulls == 'one by one':
-            import numpy as np
-            pull_count = 0
-            step = np.copy(ChainStruc.full_struc)
-            initial = np.zeros([len(step), len(step)]) 
-            initial[0][0] = 1
-            index = ChainStruc.indices + [ChainStruc.universe]
-            groups = len(index)-1
-            stop = False
-
-            def output(step):
-                probs = step[0]
-                parts = len(probs)-1
-                chunk = parts//groups
-                n=0
-                for i in range(0, groups):
-                    if i == 0:
-                        attained = ['None']
-                    else:
-                        attained = disp_conv(index[i])
-                    print(f'P{attained} = {sum(probs[n:n+chunk])*100}%')
-                    n=n+chunk
-                print(f'P{disp_conv(index[-1])} = {probs[-1]*100}%')
-
-            def disp_conv(index):
-                out = []
-                for (element, multiplicity) in index.items():
-                    cons = element + '(' + str(multiplicity) + ')'
-                    out.append(cons)
-                return sorted(out)
+            ChainStruc.onebyone()
             
-            def proceed():
-                another_one = input(': ')
-                checkquit(another_one)
-                if another_one.lower() == 'stop':
-                    return True
-                return False
-
-            print('Press enter to continue pulling.')
-            print('Input "stop" when you wish to stop.')
-            stop = proceed()
-            while not stop:
-                if pull_count == 0:
-                    output(initial)
-                    print(pull_count)
-                    pull_count += 1
-                elif pull_count == 1:
-                    output(step)
-                    print(pull_count)
-                    pull_count += 1
-                else:
-                    step = ChainStruc.full_struc @ step
-                    output(step)
-                    print(pull_count)
-                    pull_count += 1
-                stop = proceed()
         else:
             print('That was not a valid number of pulls.')
-            print('Try a non-negative integer or "one by one" next time.')
+            print('Try a non-negative integer, "one by one", or "breakpoint" next time.')
 
     if args.calculate:
         ChainStruc.hitting_time()

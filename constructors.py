@@ -5,6 +5,7 @@ import pprint
 import time
 from multiset import Multiset, FrozenMultiset
 from config import MAX_PITY, BASE_5, INC_5, MODE
+from banner_ops import checkquit
 Dec = decimal.Decimal
 decimal.getcontext()
 
@@ -180,10 +181,91 @@ class SingleBlock:
 
     def simulate(self, pull_num):
         simulated = np.linalg.matrix_power(self.full_struc, pull_num)
-        sim_res = simulated[0]
         index = self.indices + [self.universe]
         groups = len(index)-1
-        parts = len(sim_res)-1
+
+        self.output(simulated, groups, index)
+
+        # sim_res = simulated[0]
+        # parts = len(sim_res)-1
+        # chunk = parts//groups
+        # n=0
+        # for i in range(0, groups):
+        #     if i == 0:
+        #         attained = ['None']
+        #     else:
+        #         attained = self.disp_conv(index[i])
+        #     print(f'P{attained} = {sum(sim_res[n:n+chunk])*100}%')
+        #     n=n+chunk
+        # print(f'P{self.disp_conv(index[-1])} = {sim_res[-1]*100}%')
+
+    def onebyone(self, mode='manual'):
+        pull_count = 0
+        step = np.copy(self.full_struc)
+        initial = np.zeros([len(step), len(step)]) 
+        initial[0][0] = 1
+        index = self.indices + [self.universe]
+        groups = len(index)-1
+        stop = False
+        if mode == 'manual':
+            print('Press enter to continue pulling.')
+            print('Input "stop" when you wish to stop.')
+            stop = self.manual_proceed()
+            while not stop:
+                if pull_count == 0:
+                    self.output(initial, groups, index)
+                elif pull_count == 1:
+                    self.output(step, groups, index)
+                else:
+                    step = self.full_struc @ step
+                    self.output(step, groups, index)
+                print(pull_count)
+                pull_count += 1
+                stop = self.manual_proceed()
+        elif mode == 'auto':
+            correct = False
+            while not correct:
+                b_prob = input('Please enter your desired probability of success: ')
+                checkquit(b_prob)
+                try:
+                    d_prob = float(b_prob)
+                except ValueError:
+                    print('You must enter a number.')
+                    continue
+                if d_prob > 1:
+                    print('You can not have a probability greater than 1.')
+                elif d_prob == 1:
+                    print('A 100 percent success rate is unreasonable.')
+                elif d_prob < 0:
+                    print('You can not have a probability less than 0.')
+                elif 0 <= d_prob < 1:
+                    correct = True
+                    print('OK.')
+                else:
+                    print("That input should be valid, but it isn't. Try again.")
+            while not stop:
+                if pull_count == 0:
+                    success = 0
+                    curr = initial
+                elif pull_count == 1:
+                    success = step[0][len(step)-1]
+                    curr = step
+                else:
+                    step = self.full_struc @ step
+                    success = step[0][len(step)-1]
+                    curr = step
+                if success >= float(b_prob):
+                    stop = True
+                    print(f'It should take you {pull_count} pulls to achieve the desired success rate.')
+                    see_out = input('Press the enter key to see the breakdown. Input "stop" if you would like to skip the breakdown. ')
+                    checkquit(see_out)
+                    if see_out != 'stop':
+                        self.output(curr, groups, index)
+                pull_count += 1
+
+    def output(self, step, groups, index):
+        probs = step[0]
+        parts = len(probs)-1
         chunk = parts//groups
         n=0
         for i in range(0, groups):
@@ -191,10 +273,17 @@ class SingleBlock:
                 attained = ['None']
             else:
                 attained = self.disp_conv(index[i])
-            print(f'P{attained} = {sum(sim_res[n:n+chunk])*100}%')
+            print(f'P{attained} = {sum(probs[n:n+chunk])*100}%')
             n=n+chunk
-        print(f'P{self.disp_conv(index[-1])} = {sim_res[-1]*100}%')
+        print(f'P{self.disp_conv(index[-1])} = {probs[-1]*100}%')
     
+    def manual_proceed(self):
+        another_one = input(': ')
+        checkquit(another_one)
+        if another_one.lower() == 'stop':
+            return True
+        return False
+
     def disp_conv(self, index):
         out = []
         for (element, multiplicity) in index.items():
