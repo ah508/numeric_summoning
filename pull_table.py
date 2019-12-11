@@ -30,14 +30,14 @@ def pull_table():
         'size' : 0,
         'contents' : []
     }
-    for category in ['All', 'Permanent', 'Seasonal', 'Gala', 'Zodiac', 'Collab']:
+    for category in ['All', 'Permanent', 'Seasonal', 'Dragonyule', 'Halloween', "Valentine's", 'Gala', 'Zodiac', 'Collab']:
         adventurer[category] = {}
         dragon[category] = {}
     
     for rarity in ['5', '4', '3']:
         adventurer['All'][rarity] = copy.deepcopy(blank)
         dragon['All'][rarity] = copy.deepcopy(blank)
-        for subpool in ['Permanent', 'Seasonal', 'Gala', 'Zodiac', 'Collab']:
+        for subpool in ['Permanent', 'Seasonal', 'Dragonyule', 'Halloween', "Valentine's", 'Gala', 'Zodiac', 'Collab']:
             adventurer[subpool][rarity] = copy.deepcopy(blank)
             dragon[subpool][rarity] = copy.deepcopy(blank)
 
@@ -60,6 +60,16 @@ def pull_table():
             for row in d_subrows:
                 dragon[subpool][rarity]['contents'].append(getname(row, identifier))
                 dragon[subpool][rarity]['size'] += 1
+        
+        for subpool in ['Dragonyule', 'Halloween', "Valentine's"]:
+            for unit in adventurer['Seasonal'][rarity]['contents']:
+                if subpool in unit:
+                    adventurer[subpool][rarity]['contents'].append(unit)
+                    adventurer[subpool][rarity]['size'] += 1
+            for unit in dragon['Seasonal'][rarity]['contents']:
+                if subpool in unit:
+                    dragon[subpool][rarity]['contents'].append(unit)
+                    dragon[subpool][rarity]['size'] += 1
 
     pool = {
         'dragon' : dragon,

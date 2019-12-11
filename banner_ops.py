@@ -76,7 +76,7 @@ class Banner:
     def input_pools(self):
         breaker = 0
         while breaker == 0:
-            new_pool = input('Please add a pool to the banner [Permanent, Gala, Seasonal, Zodiac, Collab]: ')
+            new_pool = input("Please add a pool to the banner [Permanent, Gala, Seasonal, Dragonyule, Halloween, Valentine's, Zodiac, Collab]: ")
             checkquit(new_pool)
             try:
                 self.add_pools(new_pool)
