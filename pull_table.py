@@ -5,6 +5,22 @@ import json
 import re
 
 def getname(tag, identifier):
+    """Gets the name of a unit.
+
+    Parameters
+    ----------
+    tag : str
+        The html table entry being searched.
+    identifier : SRE_Pattern
+        The regex pattern that will return the desired result.
+        This is predetermined, and admittedly a little sloppy.
+
+    Returns
+    -------
+    str
+        The name of the unit.
+    """
+
     hold = tag.find("a")
     name = re.search(identifier, str(hold))
     try:
@@ -14,6 +30,14 @@ def getname(tag, identifier):
         print()
 
 def pull_table():
+    """Scrapes the wiki to pull some relevant information.
+
+    Scrapes the wiki for information on adventurers and dragons,
+    including rarity, general availability, and name. This data
+    is then serialized and written to a .json as a nested
+    dictionary.
+    """
+    
     adv_url = "https://dragalialost.gamepedia.com/Adventurer_List"
     drag_url = "https://dragalialost.gamepedia.com/Dragon_List"
     adv_html = urlopen(adv_url)

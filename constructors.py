@@ -10,6 +10,68 @@ Dec = decimal.Decimal
 decimal.getcontext()
 
 class SingleBlock:
+    """Constructs the markov chain for single pulls.
+
+    This class contains methods to construct several markov chains
+    characterizing the results of singular pulls at each pity level.
+    The information from these chains may then be synthesized into
+    a much larger chain that characterizes the entire state space.
+    Methods for performing certain operations, such as simulating
+    a given number of pulls, or finding the time spent in transient
+    states are also included.
+
+    Attributes
+    ----------
+    TYPE : str
+        Indicates what this chain is meant to handle, singles
+        or tenpulls. May be needed for external methods.
+    MAX_PITY : int
+        Indicates the number of pulls needed to reach maximum
+        pity for the forced pity break.
+    BASE_5 : Decimal
+        Denotes the base 5* rate.
+    INC_5 : Decimal
+        Denotes the increment to the 5* rate based on pity.
+    wants : {dict}
+        A nested dictionary of a particular format, listing
+        information on the units that the user wants from the
+        gacha.
+    universe : FrozenMultiset
+        A multiset characterizing the set of units desired
+        from the gacha.
+    indices : [FrozenMultiset]
+        A list of FrozenMultisets that represents the greater
+        block structure of the complete markov chain.
+    chain_indices : [FrozenMultiset]
+        A list of FrozenMultisets that represents the state
+        space of the single pull markov chains.
+    n_chain_db : {int : array}
+        A dictionary that maps pity level to the correct single
+        pull markov chain.
+    s_chain : array
+        The single pull markov chain for the forced pity break.
+    block_struc : array
+        A submatrix of the full markov chain containing only
+        the transient states.
+    full_struc : array
+        The full markov chain, containing all of the information
+        on transition probabilities to and from each state.
+    absorption_p :
+        The probability of absorption for a particular state
+        of the markov chain. Appended to block_struc along with
+        another similar vector to produce full_struc. This is
+        made an attribute of the class so it can be used for
+        diagnostics.
+
+    Parameters
+    ----------
+    wants : {dict}
+        A nested dictionary of a particular format, listing
+        information on the units that the user wants from the
+        gacha. This could conceivably be done manually, but
+        generally it will be handled by the main program.
+    """
+
     def __init__(self, wants):
         self.TYPE = 'single'
         self.MAX_PITY = MAX_PITY
@@ -28,10 +90,16 @@ class SingleBlock:
                     self.indices.append(FrozenMultiset(j))
 
     def generate(self):
+        """Calls the constructor methods."""
+
         self.create_chains()
         self.construct_block()
         
     def construct_block(self):
+        """Creates and concatonates blocks to form the markov chain.
+
+        #
+        """
         self.block_struc = np.array([])
         for vertical in self.indices:
             horz = np.array([])
@@ -50,6 +118,10 @@ class SingleBlock:
         self.full_struc = np.vstack((self.full_struc, absorption_s))
 
     def create_chains(self):
+        """Creates markov chains representing single pulls.
+
+        #
+        """
         state_set = self.universe | frozenset('5')
         self.chain_indices = []
         for i in range(0, len(state_set)):
@@ -134,6 +206,26 @@ class SingleBlock:
                         s_rate_none -= self.wants[attained]['spec prob']
 
     def get_block(self, horizontal, vertical):
+        """Creates blocks used to construct the final markov chain.
+
+        #
+
+        Parameters
+        ----------
+        horizontal : FrozenMultiset
+            A multiset representing the horizontal index of the
+            greater block structure under construction.
+        vertical : FrozenMultiset
+            A multiset representing the vertical index of the
+            greater block structure under construction.
+
+        Returns
+        -------
+        block : numpy array
+            The matrix needed to fill the [vertical][horizontal]
+            index of the block matrix under construction.
+        """
+
         gained = horizontal - vertical
         block = np.zeros([MAX_PITY*10 + 2, MAX_PITY*10 + 2])
         if len(gained) > 1:
@@ -165,6 +257,28 @@ class SingleBlock:
         return block
 
     def get_end(self): #note: find some way to make this more accurate
+        """Creates the vector of escape probabilities for the chain.
+
+        Finds the probability of entering the final state of the
+        markov chain from any particular state, and constructs two
+        arrays to store that information.
+        NOTE: This is achieved very lazily, so the probability of
+        absorption for a particular state may end up being larger than
+        it is supposed to be. In trial runs, this has not caused any
+        failures in computation, but it could conceivably do so. This
+        is intended to be fixed in a future update.
+
+        Returns
+        -------
+        absorption_p : array
+            An n x 1 array containing the escape probabilities
+            of the full markov chain, where n is the vertical
+            size of said markov chain.
+        absorption_s : array
+            An array that designates the final state as
+            absorbing in the full markov chain.
+        """
+
         absorption_p = np.zeros([len(self.block_struc), 1])
         absorption_s = np.zeros([1, len(self.block_struc) + 1])
         absorption_s[0][-1] = 1
@@ -173,6 +287,8 @@ class SingleBlock:
         return absorption_p, absorption_s
 
     def hitting_time(self):
+        """Finds the expected hitting time by inversion."""
+
         iden = np.eye(len(self.block_struc))
         subt = iden - self.block_struc
         final = np.linalg.inv(subt)
@@ -180,26 +296,30 @@ class SingleBlock:
         print(f'On average it will take {t} {self.TYPE}pulls to achieve the desired units.')
 
     def simulate(self, pull_num):
+        """Simulates a given number of pulls.
+
+        Parameters
+        ----------
+        pull_num : int
+            The number of pulls to simulate.
+        """
+
         simulated = np.linalg.matrix_power(self.full_struc, pull_num)
         index = self.indices + [self.universe]
         groups = len(index)-1
-
         self.output(simulated, groups, index)
 
-        # sim_res = simulated[0]
-        # parts = len(sim_res)-1
-        # chunk = parts//groups
-        # n=0
-        # for i in range(0, groups):
-        #     if i == 0:
-        #         attained = ['None']
-        #     else:
-        #         attained = self.disp_conv(index[i])
-        #     print(f'P{attained} = {sum(sim_res[n:n+chunk])*100}%')
-        #     n=n+chunk
-        # print(f'P{self.disp_conv(index[-1])} = {sim_res[-1]*100}%')
-
     def onebyone(self, mode='manual'):
+        """A method to simulate pulls one at a time.
+
+        #
+
+        Parameters
+        ----------
+        mode : str(='manual')
+            #
+        """
+
         pull_count = 0
         step = np.copy(self.full_struc)
         initial = np.zeros([len(step), len(step)]) 
@@ -264,6 +384,20 @@ class SingleBlock:
                 pull_count += 1
 
     def output(self, step, groups, index):
+        """Displays the probability of being in each state.
+
+        #
+
+        Parameters
+        ----------
+        step :
+            #
+        groups :
+            #
+        index :
+            #
+        """
+
         probs = step[0]
         parts = len(probs)-1
         chunk = parts//groups
@@ -278,6 +412,8 @@ class SingleBlock:
         print(f'P{self.disp_conv(index[-1])} = {probs[-1]*100}%')
     
     def manual_proceed(self):
+        """Manual advancement of one-by-one pulls."""
+
         another_one = input(': ')
         checkquit(another_one)
         if another_one.lower() == 'stop':
@@ -285,6 +421,18 @@ class SingleBlock:
         return False
 
     def disp_conv(self, index):
+        """Provides prettier state displays.
+        
+        Parameters
+        ----------
+        index :
+            #
+        
+        Returns
+        -------
+        [str]
+            A sorted list containing the simplified strings.
+        """
         out = []
         for (element, multiplicity) in index.items():
             cons = element + '(' + str(multiplicity) + ')'
@@ -293,22 +441,120 @@ class SingleBlock:
         
 
 class TenBlock(SingleBlock):
+    """Constructs the markov chain for ten pulls.
+
+    A subclass of SingleBlock that instead constructs the markov chain
+    for tenpulls. Many methods are reusable, but some require minor
+    alterations to account for the differences. Methods are included to
+    construct several markov chains representing the results of certain
+    types of single pulls at a particular pity level, and those chains
+    may then be used to simulate the results of a tenpull at said pity
+    level. Then, those results can be synthesized into a much larger
+    markov chain that characterizes the entire state space. Methods
+    for simulating pulls and finding the time spent in transient states
+    are also included.
+
+    Attributes
+    ----------
+    TYPE : str
+        Indicates what this chain is meant to handle, singles
+        or tenpulls. May be needed for external methods.
+    MAX_PITY : int
+        Indicates the number of pulls needed to reach maximum
+        pity for the forced pity break.
+    BASE_5 : Decimal
+        Denotes the base 5* rate.
+    INC_5 : Decimal
+        Denotes the increment to the 5* rate based on pity.
+    wants : {dict}
+        A nested dictionary of a particular format, listing
+        information on the units that the user wants from the
+        gacha.
+    universe : FrozenMultiset
+        A multiset characterizing the set of units desired
+        from the gacha.
+    indices : [FrozenMultiset]
+        A list of FrozenMultisets that represents the greater
+        block structure of the complete markov chain.
+    chain_indices : [FrozenMultiset]
+        A list of FrozenMultisets that represents the state
+        space of the single pull markov chains.
+    n_chain_db : {int : array}
+        A dictionary that maps pity level to the correct single
+        pull markov chain.
+    a_chain_db : {int : array}
+        A dictionary that maps pity level to the correct
+        alternative single pull markov chain.
+    s_chain : array
+        The single pull markov chain for the forced pity break.
+    tenpull : {int : array}
+        Maps pity level to the results of a 'simulated' tenpull
+        at that pity level.
+    block_struc : array
+        A submatrix of the full markov chain containing only
+        the transient states.
+    full_struc : array
+        The full markov chain, containing all of the information
+        on transition probabilities to and from each state.
+    absorption_p :
+        The probability of absorption for a particular state
+        of the markov chain. Appended to block_struc along with
+        another similar vector to produce full_struc. This is
+        made an attribute of the class so it can be used for
+        diagnostics.
+
+    Parameters
+    ----------
+    wants : {dict}
+        A nested dictionary of a particular format, listing
+        information on the units that the user wants from the
+        gacha. This could conceivably be done manually, but
+        generally it will be handled by the main program.
+    """
+
     def __init__(self, wants):
         super().__init__(wants)
         self.TYPE = 'ten'
 
     def generate(self):
+        """Calls the constructor methods."""
+
         self.create_chains()
         self.create_a_chains()
         self.find_p()
         self.construct_block()
 
     def find_p(self):
+        """Creates and stores the outcomes of tenpulls for pity levels.
+
+        Calls the sim_tenpull method to generate the results of a
+        tenpull at a particular pity level, and maps those results
+        to that pity level.
+        """
+
         self.tenpull = {}
         for pity in range(0, MAX_PITY + 2):
             self.tenpull[pity] = self.sim_tenpull(pity)
 
     def sim_tenpull(self, pity):
+        """Simulates the results of a tenpull given initial pity.
+
+        'Simulates' a tenpull using a (somewhat ill defined)
+        inhomogenous markov chain. This gives the conditional
+        probabilities of being in each state at the end of a tenpull
+        given that you started in a particular state.
+
+        Parameters
+        ----------
+        pity : int
+            Specifies the given pity level.
+
+        Returns
+        -------
+        array
+            The results of the simulated tenpull.
+        """
+
         if pity == MAX_PITY + 1:
             first = self.s_chain
             mid = np.linalg.matrix_power(self.n_chain_db[0], 8)
@@ -320,6 +566,22 @@ class TenBlock(SingleBlock):
         return np.linalg.multi_dot([first, mid, end])
 
     def get_block(self, horizontal, vertical):
+        """Creates blocks used to construct the final markov chain.
+
+        #
+
+        Parameters
+        ----------
+        horizontal :
+            #
+        vertical :
+            #
+
+        Returns
+        -------
+        block : numpy array
+            #
+        """
         block = np.zeros([MAX_PITY + 2, MAX_PITY + 2])
         gained = horizontal - vertical
         flag_5 = False
@@ -341,6 +603,25 @@ class TenBlock(SingleBlock):
         return block
 
     def get_end(self):
+        """Creates the vector of escape probabilities for the chain.
+
+        Finds the probability of entering the final state of the
+        markov chain from any particular state, and constructs two
+        arrays to store that information.
+        NOTE: Unlike SingleBlock, this is not done lazily, and should
+        not cause any issues.
+
+        Returns
+        -------
+        absorption_p : array
+            An n x 1 array containing the escape probabilities
+            of the full markov chain, where n is the vertical
+            size of said markov chain.
+        absorption_s : array
+            An array that designates the final state as
+            absorbing in the full markov chain.
+        """
+
         absorption_p = []
         absorption_s = np.zeros([1, len(self.block_struc) + 1])
         absorption_s[0][-1] = 1
@@ -401,50 +682,3 @@ class TenBlock(SingleBlock):
                             a_chain[c_ref.index(vertical)][c_ref.index(horizontal)] = a_rate
                             a_rate_none -= a_rate
             self.a_chain_db[pity] = a_chain
-    
-    
-# grundlespite = {
-#     'Akasha': {
-#         'base prob' : Dec('.005'),
-#         'alt prob' : Dec('.005'),
-#         'spec prob' : Dec('.125'),
-#         'prob inc' : Dec('.000639'),
-#         'alt inc' : Dec('.000639'),
-#         'rarity' : 5, 
-#         'number' : 2
-#         },
-#     'WXania' : {
-#         'base prob' : Dec('.02333'),
-#         'alt prob' : Dec('.14001'),
-#         'spec prob' : Dec('0'),
-#         'prob inc' : Dec('0'),
-#         'alt inc' : Dec('-.00073'),
-#         'rarity' : 4,
-#         'number' : 1
-#     #     },
-#     # 'Sylas' : {
-#     #     'base prob' : Dec('.005'),
-#     #     'alt prob' : Dec('.005'),
-#     #     'spec prob' : Dec('.125'),
-#     #     'prob inc' : Dec('.000639'),
-#     #     'alt inc' : Dec('.000639'),
-#     #     'rarity' : 5,
-#     #     'number' : 1
-#         }
-#     }
-
-# s_time = time.process_time()
-# np.set_printoptions(precision=3)
-# test = TenBlock(grundlespite)
-# # test = SingleBlock(grundlespite)
-# test.generate()
-# print('constructed:')
-# print(time.process_time() - s_time)
-# testfix = Testers(test)
-# # testfix.test_tenpull()
-# testfix.show_individ_error(0.001)
-# testfix.show_error()
-# test.hitting_time()
-# test.simulate(18)
-# print('solved:')
-# print(time.process_time() - s_time)

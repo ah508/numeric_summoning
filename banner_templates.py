@@ -1,12 +1,15 @@
 """Templates for banners
 
+Please note that the information contained here may be incomplete
+or inaccurate. Do not assume that my handling of rates is identical
+to how Cygames handles rates.
+
 Attributes
 ----------
 default_no_3f : dict
     'default, no 3* focus'
 default_gala : dict
     'default gala'
-    NOTE: information is not accurate.
 """
 
 import decimal
