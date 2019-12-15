@@ -245,7 +245,7 @@ elif args.simulate or args.calculate:
             print('That was not a valid number of pulls.')
             print('Try a non-negative integer, "one by one", or "breakpoint" next time.')
 
-    if args.calculate:
+    if args.suppresscalculate:
         ChainStruc.hitting_time()
         calc_time = time.process_time() - s_time
         print(f'Calculated: {calc_time} s')
