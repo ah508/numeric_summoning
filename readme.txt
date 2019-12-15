@@ -14,7 +14,8 @@ To run this program, you'll need a few other things installed:
 - bs4 (technically optional, but you'd need to edit some code)
     (see: https://pypi.org/project/beautifulsoup4/)
 - pillow (optional)
-
+    (see: https://pypi.org/project/Pillow/)
+    
 -----------------------------------------------------------------------------------------
 Features
 -----------------------------------------------------------------------------------------
