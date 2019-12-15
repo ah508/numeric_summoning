@@ -14,7 +14,7 @@ parser.add_argument('--mode', choices=['single', 'ten'], default='ten',
                     help='Signifies whether to use singlepulls or tenpulls.')
 parser.add_argument('--accurate', action='store_true',
                     help='Use more accurate numerical information - greatly increases runtime.')
-parser.add_argument('-c', '--calculate', action='store_false',
+parser.add_argument('-sc', '--suppresscalculate', action='store_false',
                     help='Suppresses calculation of expected value.')
 parser.add_argument('-s', '--simulate', action='store_true',
                     help='Allows you to simulate pulling on the banner.')
