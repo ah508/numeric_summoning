@@ -26,7 +26,7 @@ args = parser.parse_args()
 if args.update:
     pull_table()
 
-if args.simulate or args.calculate or args.newbanner or args.deletebanner:
+if args.simulate or args.suppresscalculate or args.newbanner or args.deletebanner:
     print('enter "exit" at any prompt to exit the program.')
 
 if args.newbanner or args.deletebanner:
