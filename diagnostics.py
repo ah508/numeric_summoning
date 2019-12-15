@@ -16,6 +16,36 @@ except ModuleNotFoundError:
     pillowtalk = False
 
 class SingleTester(One):
+    """Diagnostic methods for single pulls.
+
+    Includes methods to test incongruencies in escape probabilities,
+    test whether a chain is stochastic with some degree of tolerance,
+    and generate images to check the structure of a particular feature.
+    This is a subclass of SingleBlock, and as such inherits all of the
+    same attributes and methods.
+
+    Attributes
+    ----------
+    chain_gen : bool
+        Indicates whether or not chains have been generated yet.
+    block_gen : bool
+        Indicates whether or not blocks have been generated yet.
+    check_gen : bool
+        Indicates whether or not the check vector has been
+        generated yet.
+    error_gen : bool
+        Indicates whether or not row errors have been computed
+        yet.
+
+    Parameters
+    ----------
+    wants : {dict}
+        A nested dictionary of a particular format, listing
+        information on the units that the user wants from the
+        gacha. This could conceivably be done manually, but
+        generally it will be handled by the main program.
+    """
+
     def __init__(self, wants):
         super().__init__(wants)
         self.clear()
@@ -157,6 +187,42 @@ class SingleTester(One):
                 print(f'error of {self.error[i]} on row {i}')
     
 class TenTester(Ten, SingleTester):
+    """Diagnostic methods for tenpulls.
+
+    Includes methods to test incongruencies in escape probabilities,
+    test whether a chain is stochastic with some degree of tolerance,
+    and generate images to check the structure of a particular feature.
+    This is a subclass of TenBlock, and as such inherits all of the
+    same attributes and methods.
+
+    Attributes
+    ----------
+    chain_gen : bool
+        Indicates whether or not chains have been generated yet.
+    a_chain_gen : bool
+        Indicates whether or not alt chains have been generated
+        yet.
+    tenpull_gen : bool
+        Indicates whether or not tenpulls have been computed
+        yet.
+    block_gen : bool
+        Indicates whether or not blocks have been generated yet.
+    check_gen : bool
+        Indicates whether or not the check vector has been
+        generated yet.
+    error_gen : bool
+        Indicates whether or not row errors have been computed
+        yet.
+
+    Parameters
+    ----------
+    wants : {dict}
+        A nested dictionary of a particular format, listing
+        information on the units that the user wants from the
+        gacha. This could conceivably be done manually, but
+        generally it will be handled by the main program.
+    """
+
     def __init__(self, wants):
         super().__init__(wants)
         self.clear()

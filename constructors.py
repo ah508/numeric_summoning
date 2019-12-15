@@ -98,8 +98,24 @@ class SingleBlock:
     def construct_block(self):
         """Creates and concatonates blocks to form the markov chain.
 
-        #
+        The states of the markov chain we wish to construct has a very
+        simple structure that lends itself to iterative generation.
+        The indices generated in __init__ are used as the axes of a
+        block superstructure, where each block represents the set of
+        states that you are transitioning into. The index of the
+        vertical axis denotes your current block-set of states, and
+        the index of the horizontal axis denotes the block-set of
+        states you are transitioning into. Within each of these blocks,
+        there is a common substructure defined by your pity rate, and
+        the position of the block in the superstructure (read: the
+        units attained in the transition to this state from your
+        current state).
+
+        This method handles the formation of the block superstructure,
+        and calls get_block for the generation of the substructure
+        within each block.
         """
+
         self.block_struc = np.array([])
         for vertical in self.indices:
             horz = np.array([])
@@ -120,8 +136,14 @@ class SingleBlock:
     def create_chains(self):
         """Creates markov chains representing single pulls.
 
-        #
+        This method constructs a markov chain containing information
+        regarding the transitions between each state of possession, for
+        a single pull, at a specific pity level. This is done for each
+        pity level, and the chains are mapped to that pity level with a
+        dictionary. A chain is also generated for the forced pity break
+        that occurs at the 101st or 61st pull.
         """
+
         state_set = self.universe | frozenset('5')
         self.chain_indices = []
         for i in range(0, len(state_set)):
@@ -208,16 +230,25 @@ class SingleBlock:
     def get_block(self, horizontal, vertical):
         """Creates blocks used to construct the final markov chain.
 
-        #
+        This method generates the substructure mentioned in
+        construct_blocks. It uses the horizontal and vertical indices
+        to determine which units are aquired in the transition to this
+        set of states, and uses the rarities of the units acquired to
+        determine the form of this particular block. The substates here
+        are defined by pity rate, and the transition probabilities are
+        retrieved from n_chain_db and s_chain. Please note that
+        although the entries of this matrix are stochastic, it is
+        merely a small part of a markov chain - not a markov chain
+        itself.
 
         Parameters
         ----------
         horizontal : FrozenMultiset
             A multiset representing the horizontal index of the
-            greater block structure under construction.
+            block superstructure under construction.
         vertical : FrozenMultiset
             A multiset representing the vertical index of the
-            greater block structure under construction.
+            block superstructure under construction.
 
         Returns
         -------
@@ -312,12 +343,25 @@ class SingleBlock:
     def onebyone(self, mode='manual'):
         """A method to simulate pulls one at a time.
 
-        #
+        Determines the state of the markov chain at each step, and if
+        desired displays the probability of being in each state at that
+        step. NOTE: state here does not literally refer to all states
+        of the markov chain - referring instead to the states of
+        possesion that define the block superstructure of the chain.
+        This method is also used to determine the number of steps
+        needed to achieve a certain probability of being in the final
+        absorbing state.
 
         Parameters
         ----------
         mode : str(='manual')
-            #
+            Determines how the method is run, and what output
+            it produces. 'manual' indicates that the user is
+            to observe the output at each step, and 'auto'
+            indicates that the user is not interested in the
+            results of each step, and only wishes to know how
+            many steps are needed to reach a certain
+            probability of being in the final state.
         """
 
         pull_count = 0
@@ -377,25 +421,29 @@ class SingleBlock:
                 if success >= float(b_prob):
                     stop = True
                     print(f'It should take you {pull_count} pulls to achieve the desired success rate.')
-                    see_out = input('Press the enter key to see the breakdown. Input "stop" if you would like to skip the breakdown. ')
+                    see_out = input('Press the enter key to see the breakdown. ')
                     checkquit(see_out)
-                    if see_out != 'stop':
-                        self.output(curr, groups, index)
+                    self.output(curr, groups, index)
                 pull_count += 1
 
     def output(self, step, groups, index):
         """Displays the probability of being in each state.
 
-        #
-
         Parameters
         ----------
-        step :
-            #
-        groups :
-            #
-        index :
-            #
+        step : array
+            The state of the markov chain at the current step.
+            Note - does not care about the actual step count.
+        groups : int
+            The number of 'groups' that the states of the chain
+            can be lumped into. Alternatively, the number of 
+            states used to generate the block superstructure of
+            the chain.
+        index : [FrozenMultiset]
+            A list of sets describing the states used to
+            generate the block superstructure of the markov
+            chain. Each of the actual states is assigned to
+            one of these superstates for display purposes.
         """
 
         probs = step[0]
@@ -425,14 +473,18 @@ class SingleBlock:
         
         Parameters
         ----------
-        index :
-            #
+        index : [FrozenMultiset]
+            A list of sets describing the states used to
+            generate the block superstructure of the markov
+            chain. Each of the actual states is assigned to
+            one of these superstates for display purposes.
         
         Returns
         -------
         [str]
             A sorted list containing the simplified strings.
         """
+
         out = []
         for (element, multiplicity) in index.items():
             cons = element + '(' + str(multiplicity) + ')'
@@ -568,20 +620,33 @@ class TenBlock(SingleBlock):
     def get_block(self, horizontal, vertical):
         """Creates blocks used to construct the final markov chain.
 
-        #
+        This method generates the substructure mentioned in
+        construct_blocks. It uses the horizontal and vertical indices
+        to determine which units are aquired in the transition to this
+        set of states, and uses the rarities of the units acquired to
+        determine the form of this particular block. The substates here
+        are defined by pity rate, and the transition probabilities are
+        retrieved from the tenpull dictionary. Please note that
+        although the entries of this matrix are stochastic, it is
+        merely a small part of a markov chain - not a markov chain
+        itself.
 
         Parameters
         ----------
-        horizontal :
-            #
-        vertical :
-            #
+        horizontal : FrozenMultiset
+            A multiset representing the horizontal index of the
+            block superstructure under construction.
+        vertical : FrozenMultiset
+            A multiset representing the vertical index of the
+            block superstructure under construction.
 
         Returns
         -------
         block : numpy array
-            #
+            The matrix needed to fill the [vertical][horizontal]
+            index of the block matrix under construction.
         """
+
         block = np.zeros([MAX_PITY + 2, MAX_PITY + 2])
         gained = horizontal - vertical
         flag_5 = False
@@ -639,6 +704,12 @@ class TenBlock(SingleBlock):
         return absorption_p, absorption_s
     
     def create_a_chains(self):
+        """Creates a markov chain for the final pull of a tenpull.
+
+        Generates a markov chain defining the transition probabilities
+        between possesion states for the final pull of a tenpull.
+        """
+
         state_set = self.universe | frozenset('5')
         c_ref = self.chain_indices
         self.a_chain_db = {}
