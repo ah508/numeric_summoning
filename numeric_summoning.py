@@ -221,7 +221,10 @@ elif args.simulate or args.calculate:
     print(f'Generated: {g_time} s')
 
     if args.simulate:
-        num_pulls = input('Enter the number of pulls you wish to simulate: ')
+        print('Input a number to simulate that many pulls')
+        print('Input "one by one" to simulate sequential individual pulls')
+        print('Input "breakpoint" to calculate a probability breakpoint')
+        num_pulls = input(': ')
         checkquit(num_pulls)
         try:
             num_pulls = int(num_pulls)
