@@ -158,6 +158,52 @@ dyule_refocus = {
     'max pity' : 10
 }
 
+zodiac_2020 = {
+    '5' : {
+        'Focus' : {
+            'base' : Dec('0.031'),
+            'inc' : Dec('0.0039'),
+            'adventurer' :  [15, 31],
+            'dragon' : [16, 31]
+        },
+        'Non Focus' : {
+            'base' : Dec('0.009'),
+            'inc' : Dec('0.0011'),
+            'adventurer' : [5, 9],
+            'dragon' : [4, 9]
+        }
+    },
+    '4' : {
+        'Focus' : {
+            'base' : Dec('0.07'),
+            'inc' : Dec('0'),
+            'adventurer' : [3, 4],
+            'dragon' : [1, 4]
+        },
+        'Non Focus' : {
+            'base' : Dec('0.09'),
+            'inc' : Dec('0'),
+            'adventurer' : [101, 180],
+            'dragon' : [79, 180]
+        }
+    },
+    '3' : {
+        'Focus' : { #note, may not be accurtate
+            'base' : Dec('0'),
+            'inc' : Dec('0'),
+            'adventurer' : [1, 2],
+            'dragon' : [1, 2]
+        },
+        'Non Focus' : {
+            'base' : Dec('0.8'),
+            'inc' : Dec('-0.005'),
+            'adventurer' : [3, 5],
+            'dragon' : [2, 5]
+        }
+    },
+    'max pity' : 10
+}
+
 
 #NOTE: the nonfocus 4* rate is really weird. the true value is
 #probably something else entirely.
