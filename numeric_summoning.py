@@ -86,7 +86,7 @@ if args.newbanner or args.deletebanner:
                     d_banner = False
     print('File operations complete.')
 
-elif args.simulate or args.calculate:
+elif args.simulate or args.suppresscalculate:
     import os
     import time
     import config
