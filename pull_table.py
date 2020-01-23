@@ -27,6 +27,7 @@ def getname(tag, identifier):
         return name.group(0)
     except AttributeError:
         print('Name Fetch error')
+        print(tag)
         print()
 
 def pull_table():
@@ -46,7 +47,7 @@ def pull_table():
     drag_html = urlopen(drag_url)
     drag_data = BeautifulSoup(drag_html, "html5lib")
     drag_table = drag_data.find("table", {"class" : "wikitable"})
-    identifier = re.compile("""(?<=title=")[A-Za-z'ʻ() -]*(?=")""")
+    identifier = re.compile("""(?<=title=")[A-Za-z0-9'ʻ() -]*(?=")""")
 
     adventurer = {}
     dragon = {}
